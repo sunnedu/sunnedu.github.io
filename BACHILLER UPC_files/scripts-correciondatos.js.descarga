@@ -1,0 +1,931 @@
+﻿function refrescarC(){
+	var urlBase = '/';
+	captcha = $("#captchaImg, #captchaImgPriv");
+	var img = $('<img>');
+	var d = new Date();
+	var n = d.getMilliseconds();
+	img.attr('src',urlBase + 'simplecaptcha?date=' + n);
+	captcha.empty();
+	captcha.append(img);
+	$('#captcha, #captchaPriv').val('').focus();
+}
+
+$(document).on('click', '#linkaqui', function() {
+	var txtdoc = $('#doc').val();
+	var txtnombre = $('#nombre').val();
+	if(txtdoc == '' && txtnombre == ''){
+		$('#frmError').modal('show');
+		$('#frmError_Body').html('Ingresar el número de su Documento de Identidad o Ingrese sus Apellidos y Nombres completos');
+	}else{		
+		$('.cabSolicitar').show();
+	}	
+});
+
+$(document).on('change', '#Soli_NumDocIde', function() {
+	var idDoc = $('#ListatipoDocumentoCorreDatos').val();
+	if(idDoc == 1){
+		$('#Soli_ApePaterno').attr('readonly',false);
+		$('#Soli_ApePaterno').attr('disabled',false);
+		$('#Soli_ApePaterno').val('');
+		$('#Soli_ApeMaterno').attr('readonly',false);
+		$('#Soli_ApeMaterno').attr('disabled',false);
+		$('#Soli_ApeMaterno').val('');
+		$('#Soli_Nombre').attr('readonly',false);
+		$('#Soli_Nombre').attr('disabled',false);
+		$('#Soli_Nombre').val('');
+	}else{
+		$('#Soli_ApePaterno').attr('readonly',false);
+		$('#Soli_ApePaterno').attr('disabled',false);
+		$('#Soli_ApePaterno').val('');
+		$('#Soli_ApeMaterno').attr('readonly',false);
+		$('#Soli_ApeMaterno').attr('disabled',false);
+		$('#Soli_ApeMaterno').val('');
+		$('#Soli_Nombre').attr('readonly',false);
+		$('#Soli_Nombre').attr('disabled',false);
+		$('#Soli_Nombre').val('');
+	}
+});
+
+$(document).on('change', '#ListatipoDocumentoCorreDatos', function() {
+	var idDoc = $('#ListatipoDocumentoCorreDatos').val();
+	if(idDoc == 1){
+		$('#btnDatosSoli').attr('disabled',false);
+		$('#Soli_NumDocIde').val('');		
+		$("#Soli_NumDocIde").attr('maxlength','8');
+		$('#Soli_ApePaterno').attr('readonly',false);
+		$('#Soli_ApePaterno').attr('disabled',false);
+		$('#Soli_ApePaterno').val('');
+		$('#Soli_ApeMaterno').attr('readonly',false);
+		$('#Soli_ApeMaterno').attr('disabled',false);
+		$('#Soli_ApeMaterno').val('');
+		$('#Soli_Nombre').attr('readonly',false);
+		$('#Soli_Nombre').attr('disabled',false);
+		$('#Soli_Nombre').val('');
+	}else{
+		$('#btnDatosSoli').attr('disabled',true);
+		$('#Soli_ApePaterno').attr('readonly',false);
+		$('#Soli_ApePaterno').attr('disabled',false);
+		$('#Soli_ApePaterno').val('');
+		$('#Soli_ApeMaterno').attr('readonly',false);
+		$('#Soli_ApeMaterno').attr('disabled',false);
+		$('#Soli_ApeMaterno').val('');
+		$('#Soli_Nombre').attr('readonly',false);
+		$('#Soli_Nombre').attr('disabled',false);
+		$('#Soli_Nombre').val('');
+		$('#Soli_NumDocIde').val('');
+		$("#Soli_NumDocIde").attr('maxlength','15');
+	}
+});
+$(document).on('click', '#btnDatosSoli', function() {
+	var Soli_NumDocIde = $('#Soli_NumDocIde').val();
+	var idDoc = $('#ListatipoDocumentoCorreDatos').val();
+	if(Soli_NumDocIde.length == 8 && idDoc == 1){		
+		 buscarReniec();
+	}
+	else {		  
+		$("#Soli_ApePaterno").val('');
+		$("#Soli_ApeMaterno").val('');
+	    $("#Soli_Nombre").val('');
+	    $("#Soli_ApePaterno").prop('readonly',false);
+		$("#Soli_ApeMaterno").prop('readonly',false);
+	    $("#Soli_Nombre").prop('readonly',false);
+	  }
+});
+
+function buscarReniec(){  
+	  dni = $('#Soli_NumDocIde').val();
+	  $.ajax({ 
+	    type: 'GET',
+	    url: 'getDatosCorreccion/' + dni,  
+	    beforeSend: function(){	 
+			   $('#frmProcessCorreccion').modal({
+			     backdrop: 'static',
+			     keyboard: false
+			   });            
+			 },
+	    complete: function(data){  
+	    },
+	    success: function (data) {	
+	    	$('#frmProcessCorreccion').modal('toggle');
+	      var registro = data;
+	      if(data.mensaje=="OK")
+	      {	    
+	    	 
+	    	  $("#Soli_ApePaterno").attr('readonly',true);
+	    	  $('#Soli_ApePaterno').val(data.persona.apellidoPaterno); 
+	    	  $("#Soli_ApeMaterno").attr('readonly',true);
+	    	  $('#Soli_ApeMaterno').val(data.persona.apellidoMaterno); 
+	    	  $("#Soli_Nombre").attr('readonly',true);
+	    	  $('#Soli_Nombre').val(data.persona.nombres);	        
+	      }
+	      else{
+	        
+	        $('#frmMensajesCorrecciones').modal('show');
+	        $('#frmError_BodyDatos').html('Ingrese sus Nombres y Apellidos.');
+	        $("#Soli_ApePaterno").val('');
+	        $("#Soli_ApePaterno").attr('readonly',false);
+	        $('#Soli_ApePaterno').attr('disabled',false);
+	        $("#Soli_ApeMaterno").val('');
+	        $("#Soli_ApeMaterno").attr('readonly',false);
+	        $('#Soli_ApeMaterno').attr('disabled',false);
+	        $("#Soli_Nombre").val('');
+	        $("#Soli_Nombre").attr('readonly',false);
+	        $('#Soli_Nombre').attr('disabled',false);
+	      }
+	    },
+	     error: function(errors){
+	      console.log('error');      
+	     }
+	 });
+}
+
+jQuery.extend(jQuery.validator.messages, {
+	  required: "* Por favor, ingrese este campo.",
+	  remote: "Por favor, ingrese este campo.",
+	  email: "Por favor, escribe una dirección de correo válida",
+	  url: "Por favor, escribe una URL válida.",
+	  date: "Por favor, escribe una fecha válida.",
+	  dateISO: "Por favor, escribe una fecha (ISO) válida.",
+	  number: "Por favor, escribe un número entero válido.",
+	  digits: "Por favor, escribe sólo dígitos.",
+	  creditcard: "Por favor, escribe un número de tarjeta válido.",
+	  equalTo: "Por favor, escribe el mismo valor de nuevo.",
+	  accept: "Por favor, escribe un valor con una extensión aceptada.",
+	  maxlength: jQuery.validator.format("Por favor, no escribas más de {0} caracteres."),
+	  minlength: jQuery.validator.format("Por favor, no escribas menos de {0} caracteres."),
+	  rangelength: jQuery.validator.format("Por favor, escribe un valor entre {0} y {1} caracteres."),
+	  range: jQuery.validator.format("Por favor, escribe un valor entre {0} y {1}."),
+	  max: jQuery.validator.format("Por favor, escribe un valor menor o igual a {0}."),
+	  min: jQuery.validator.format("Por favor, escribe un valor mayor o igual a {0}.")
+	});
+$(document).on('click', '#atrasVistaPrevia', function() {
+	$("#correccion_datos").tab('show');
+})
+$(document).on('click', '#btneditardata', function() {	
+	$('#mensajedatossolicitantes').modal('show');	 
+	$('#btnsiguiedatossolicitante').attr('data-ide', '');
+    var id = $(this).data('id');
+    var opcion = $(this).data('opcion');
+    var proc = $(this).data('proc');    
+	 $('#btnSiguieMensajeDatosSolicitante').attr('data-idmensaje', id); 
+	 $('#btnSiguieMensajeDatosSolicitante').attr('data-opcionmensaje', opcion); 
+	 $('#btnSiguieMensajeDatosSolicitante').attr('data-procmensaje', proc); 
+	 $('#btnsiguiedatossolicitante').attr('data-ide', id);
+	 $('#btnsiguiedatossolicitante').attr('data-opcione', opcion); 
+	 $('#btnsiguiedatossolicitante').attr('data-proce', proc); 
+})
+
+$(document).on('click', '#btneditarExtranjeros',function(){
+	$('#mensajedatossolicitantesExtranjeros').modal('show');	
+	$('#btnsiguiedatossolicitante').attr('data-ide', '');
+    var id = $(this).data('id');
+    var opcion = $(this).data('opcion');
+    var proc = $(this).data('proc');    
+	 $('#btnSiguieMensajeDatosSolicitanteExtranjero').attr('data-idmensaje', id); 
+	 $('#btnSiguieMensajeDatosSolicitanteExtranjero').attr('data-opcionmensaje', opcion); 
+	 $('#btnSiguieMensajeDatosSolicitanteExtranjero').attr('data-procmensaje', proc); 
+	 $('#btnsiguiedatossolicitante').attr('data-ide', id);
+	 $('#btnsiguiedatossolicitante').attr('data-opcione', opcion); 
+	 $('#btnsiguiedatossolicitante').attr('data-proce', proc); 
+	
+})
+
+$(document).on('click', '#btnSiguieMensajeDatosSolicitante', function() {	
+	$("#datos_solicitante").tab('show');
+	$('#myModalpestanas').modal('show');
+	limpiarCorreccion();
+})
+
+$(document).on('click', '#btnSiguieMensajeDatosSolicitanteExtranjero', function() {	
+	$("#datos_solicitante_extranjeros").tab('show');
+	$('#ModalpestanasExtranjeros').modal('show');	
+})
+
+function getSizeFile(){
+	$('#filecartapoder').change(function (){
+	     var sizeByte = this.files[0].size;
+	     var siezekiloByte = parseInt(sizeByte / 1024);
+	     return siezekiloByte;
+	});
+}
+
+$(document).on('click', '#btnsiguiedatossolicitante', function() {	
+	var filecartapoder = $('#filecartapoder').val();
+	if (filecartapoder.length > 1){
+		var extension = (filecartapoder.substring(filecartapoder.lastIndexOf("."))).toLowerCase(); 
+		var input = document.getElementById('filecartapoder');
+		var file = input.files[0];
+		var sizeByte = file.size;
+	    var siezekiloByte = parseInt(sizeByte / 1024);		
+		if(siezekiloByte > 8192 || extension != '.pdf'){			
+			$('#frmMensajesCorrecciones').modal('show');
+			$('#frmError_BodyDatos').html('El peso del archivo no debe tener más de 8mb y el archivo tiene que tener formato .pdf');
+		}else{
+			var a= validarDatosSolicitante();			
+			if(a == true){
+				$("#correccion_datos").tab('show');
+				MostraCorreccionDatos();		
+			}	
+		}
+	}else{
+		var a= validarDatosSolicitante();		
+		if(a == true){
+			$("#correccion_datos").tab('show');
+			MostraCorreccionDatos();		
+		}
+	}	
+})
+
+$("#Soli_NumDocIde").keyup(function(){
+    let string = $("#Soli_NumDocIde").val();
+    $("#Soli_NumDocIde").val(string.replace(/ /g, ""))
+})
+
+function validarDatosSolicitante(){
+	var ListatipoDocumentoCorreDatos = $('#ListatipoDocumentoCorreDatos').val();
+	var Soli_NumDocIde = $('#Soli_NumDocIde').val();
+	var Soli_ApePaterno = $('#Soli_ApePaterno').val();
+	var Soli_ApeMaterno = $('#Soli_ApeMaterno').val();
+	var Soli_Nombre = $('#Soli_Nombre').val();
+	var Soli_Email = $('#Soli_Email').val();
+	
+	if(ListatipoDocumentoCorreDatos === '' || Soli_NumDocIde.length < 1 || Soli_Nombre.trim() === '' || Soli_Email.length < 1)
+	{
+		$('#frmMensajesCorrecciones').modal('show');
+		$('#frmError_BodyDatos').html('Ingresar todos los campos obligatorios(*).');
+		return false;
+	}/*else if(Soli_ApePaterno.length < 1 && Soli_ApeMaterno.length < 1){
+		$('#frmMensajesCorrecciones').modal('show');
+		$('#frmError_BodyDatos').html('Ingresar Apellido.');
+		return false;		
+	}*/
+	else{
+		if(Soli_Email.indexOf('@', 0) == -1 || Soli_Email.indexOf('.', 0) == -1) {
+            $('#frmMensajesCorrecciones').modal('show');
+    		$('#frmError_BodyDatos').html('El correo electrónico introducido no es correcto.');
+            return false;
+        }
+		return true;
+	}
+}
+
+function MostraCorreccionDatos(){
+		id =$('#btnsiguiedatossolicitante').attr('data-ide'); 
+		dni = '';//$(this).data('datadni');
+		window.scrollTo(0,0);
+		
+		$.ajax({
+			url: 'agregarlocalizaciondetalle',
+			type: 'POST',
+			dataType: 'json',
+			context : this,
+			data: {dni: dni,id_grado:id},
+		})
+		.done(function(data) {
+			$('html,body').animate({scrollTop: 0},'fast');			 
+			id = $('#btnsiguiedatossolicitante').attr('data-ide');
+			opcion = $(this).data('opcion');	
+			proc=$(this).data('proc');
+			
+			codigo = '';
+			opcion = $('#btnsiguiedatossolicitante').data('opcione');
+			proc =  $('#btnsiguiedatossolicitante').data('proce');//'N';
+			ca = 'N';
+			tk = $('#token').val();			
+			$.ajax({
+				url: 'consultaDatos',
+				type: 'POST',
+				dataType: 'json',
+				context : this,				
+				data: {id: id, codigo:codigo, opcion:opcion, proc:proc, ca:'N', _token:tk},
+			})
+			.done(function(data) {	
+				var trHTML = '';
+				$.each($.parseJSON(data), function(i, item) {
+					var proc = 'N';
+					if (proc == 'E'){
+						var d = new Date(item.RESO_FEC);
+						var n = d.toLocaleDateString();
+						trHTML += '<tr><td><strong>Tipo de documento de identidad:</strong> </td><td>'+item.DOCU_TIP + '</td></tr><tr><td><strong>Número de documento:</strong></td><td>' + item.DOCU_NUM + '</td></tr><tr><td><strong>Apellidos:</strong> </td><td>' + item.APEPAT + ' ' + item.APEMAT + '</td></tr><tr><td><strong>Nombres:</strong> </td><td> ' + item.NOMBRE + '</td></tr><tr><td><strong>Grado/Título:</strong></td><td> ' + item.GRAD_TITU + '</td></tr><tr><td><strong>Especialidad/Mención:</strong></td><td> ' + item.ESPECIALIDAD + '</td></tr><tr><td><strong>Tipo de Graduación:</strong></td><td>Reconocimiento</td></tr><tr><td><strong>Número de Resolución:</strong></td><td> ' + item.RESO_NUM + '</td></tr><tr><td><strong>Fecha de Resolución:</strong></td><td>'+n+'</td></tr><tr><td><strong>Nombre de Institución:</strong></td><td> ' + item.U_NOM + '</td></tr><tr><td><strong>País:</strong></td><td>'+item.PAIS+'</td></tr>';
+					} else if (proc == 'R'){
+						var d = new Date(item.RESO_FEC);
+						var n = d.toLocaleDateString();
+						trHTML += '<tr><td><strong>Tipo de documento de identidad:</strong> </td><td>'+item.DOCU_TIP + '</td></tr><tr><td><strong>Número de documento:</strong></td><td>' + item.DOCU_NUM + '</td></tr><tr><td><strong>Apellidos:</strong> </td><td>' + item.APEPAT + ' ' + item.APEMAT + '</td></tr><tr><td><strong>Nombres:</strong> </td><td> ' + item.NOMBRE + '</td></tr><tr><td><strong>Grado/Título:</strong></td><td> ' + item.GRAD_TITU + '</td></tr><tr><td><strong>Especialidad/Mención:</strong></td><td> ' + item.ESPECIALIDAD + '</td></tr><tr><td><strong>Tipo de Graduación:</strong></td><td>Reconocimiento</td></tr><tr><td><strong>Número de Resolución:</strong></td><td> ' + item.RESO_NUM + '</td></tr><tr><td><strong>Fecha de Resolución:</strong></td><td>'+n+'</td></tr><tr><td><strong>Nombre de Institución:</strong></td><td> ' + item.U_NOM + '</td></tr><tr><td><strong>País:</strong></td><td>'+item.PAIS+'</td></tr>';
+					} else if (proc == 'N'){
+						$('#datosinstitu').val(item.universidad);
+						$('#datosinstitu').attr('data-insti', item.universidad);
+						$('#valorinstitucion').val(item.universidad);
+						$('#valorgradotitulo').val(item.gradTitu);
+						$('#tipdoc').attr('data-valueselect', item.docuTip);
+						$('#tipdoc').val(item.codDocuTip);
+						$('#btncancelarTipDoc').attr('data-valor',item.docuTip);
+						$('#txtNumDoc').val(item.docuNum);
+						$('#btncancelarNumDoc').attr('data-valor',item.docuNum);
+						$('#txtApePat').val(item.apepat);
+						$('#btncancelarApePat').attr('data-valor',item.apepat);
+						$('#txtApeMat').val(item.apemat);
+						$('#btncancelarApeMat').attr('data-valor',item.apemat);
+						$('#txtNombre').val(item.nombre);
+						$('#btncancelarNombre').attr('data-valor',item.nombre);
+					}
+				});
+				
+	$('#detalleDatos').append(trHTML);
+	//var valueselect = $('#tipdoc').data('valueselect');
+	//$('#tipdoc').val(valueselect);	
+	$('#frmProcess').modal('hide');
+	$("body").addClass("modal-open");
+	})
+	.fail(function() {
+		console.log("error");
+		mensaje();
+		    		
+	});
+	console.log("success");
+	})
+	.fail(function() {
+		console.log("error");
+	});	
+}
+
+	
+
+$(document).on('click', '#btnsiguiecorrecc', function() {		
+	
+	var tipodoccorredatosSolicitante = $('#ListatipoDocumentoCorreDatos option:selected').text();
+	var Soli_NumDocIde = $('#Soli_NumDocIde').val();
+	var Soli_ApePaterno = $('#Soli_ApePaterno').val();
+	var Soli_ApeMaterno = $('#Soli_ApeMaterno').val();
+	var Soli_Nombre = $('#Soli_Nombre').val();
+	var Soli_Email = $('#Soli_Email').val();
+	var Soli_Telefono  = $('#Soli_Telefono').val();
+
+	var trHTML = '';
+	$('#detalleSolicitante').html('');
+		trHTML += '<tr><td><strong>Identificación:</strong></td><td>' + tipodoccorredatosSolicitante +' '+ Soli_NumDocIde+ '</td></tr>';
+		trHTML += '<tr><td><strong>Nombre:</strong></td><td>' + Soli_ApePaterno +' '+ Soli_ApeMaterno+' '+' '+Soli_Nombre+'</td></tr>';
+		trHTML += '<tr><td><strong>Correo:</strong></td><td>' + Soli_Email + '</td></tr>';
+		trHTML += '<tr><td><strong>Teléfono:</strong></td><td>' + Soli_Telefono + '</td></tr>';
+	$('#detalleSolicitante').append(trHTML);
+		
+		id = $('#btnsiguiedatossolicitante').attr('data-ide');
+		codigo = '';//$(this).data('codigo');
+		opcion = $('#btnsiguiedatossolicitante').data('opcione');
+		proc =  $('#btnsiguiedatossolicitante').data('proce');//'N';
+		ca = 'N';//$(this).data('ca');
+		tk = $('#token').val();	
+		$.ajax({
+			url: 'consultaDatos',
+			type: 'POST',
+			dataType: 'json',
+			context : this,			
+			data: {id: id, codigo:codigo, opcion:opcion, proc:proc, ca:'N', _token:tk},
+		})
+		.done(function(data) {		
+			var PAIS = 'PERÚ';
+			var COMENTARIO = '-';
+			$('#tituloVistaPrevia').html('');
+			var trHTMLt = '';	
+			trHTMLt = '<tr class="table-success"><th style="border:1px solid #044bb1 !important;">Graduado</th><th style="border:1px solid #044bb1 !important;">Grado o Título</th><th style="border:1px solid #044bb1 !important;">Institución</th></tr>';			
+			$('#tituloVistaPrevia').append(trHTMLt);
+			
+			$('#finalDataPrevia').html('');		
+			if (data.response == 'error'){
+				$('#frmError').modal('toggle');
+				$('#frmError_Body').html('<p>EL código CAPTCHA ingresado no es correcto.</p>')
+			} else if (data == '[]'){
+				$('#frmError').modal('toggle');
+				$('#frmError_Body').html('<p>No se encontraron resultados.</p>')
+			} else {
+				var trHTML = '';				
+				$.each($.parseJSON(data), function(i, item) {					
+					trHTML += '<tr>' + 
+						'<td data-column="Graduado" style="font-size:12px; vertical-align:center;border:1px solid #044bb1 !important;">' + item.nombre +','+' '+ item.apepat +' '+item.apemat + '<br>';
+						if (item.docuTip == '- X' || item.docuTip == '-' || item.docuTip == ''){
+							//trHTML += '<small>Agradeceremos, comunicarse al correo, <span>actualizaciones@sunedu.gob.pe</span> especificando el asunto <span>"Alerta de página web"</span></small>'
+						} else {
+							trHTML += '<strong>' + item.docuTip + ' '+ item.docuNum +'</strong>';
+						}
+						trHTML += '</td>' +
+						'<td data-column="Grado o Título" style="font-size:12px; vertical-align:center;border:1px solid #044bb1 !important;">' + 
+							item.gradTitu + '<br> ' + 
+							item.diplFec + '*';
+							if (PAIS == 'PARAGUAY'){
+								trHTML += '<br><small>* Al sólo efecto de la prosecución de otros estudios de post grado y al sólo para el ejercicio de actividades académicas en Universidades de ambas Partes. Dicho reconocimiento no habilita para el ejercicio profesional</small>'
+							}
+							if (COMENTARIO != '-') {
+								trHTML += '<br><br><small>' + COMENTARIO + '</small>';
+							}
+						trHTML += '</td>' +
+						'<td data-column="Institución" style="font-size:12px; vertical-align:center;border:1px solid #044bb1 !important;">' + item.universidad + '</td>';						
+							if(item.TIPO == 'N'){
+							trHTML += '<td data-column="Accion" class="btn-sm cabSolicitar" style="font-size:12px; vertical-align:center; text-align:center;display:none"><span style="cursor:pointer;color:#5d4595;" class="glyphicon glyphicon-edit" data-id="'+item.idSolicitud+'" data-opcion="PRI" data-proc="N" id="btneditardata" data-toggle="tooltip" data-placement="top" title="Editar"></span></td>'
+							}else{
+								trHTML += '<td data-column="Accion" class="cabSolicitar" style="font-size:12px; vertical-align:center;display:none" ></span></td>';	
+							}						
+						trHTML += '</tr>';
+					$('.mensajes-especiales').removeClass('hidden');
+				});				
+				$('#finalDataPrevia').append(trHTML);
+				$('#resultado_publica_box').removeClass('hidden');
+				$('#imprimir').attr('disabled',false);
+				$('html,body').animate({scrollTop: $("#resultado_publica_box").offset().top},'slow');
+			}
+		})
+		.fail(function() {
+				mensaje();		    		
+		    		console.log("error");
+		    	})
+		.always(function() {
+			refrescarC();
+			$('.closeModalConstancia').removeClass('hidden');	
+		});
+		
+		/*DATOS DE CORRECCION DE DATOS*/
+		$('#finalDataModificacion').html('');
+		var trHTMLtm = '';
+		
+		var valorSelectOriginal = $('#tipdoc').data('valueselect');
+		var tipdocCambioTEXT =$('#tipdoc option:selected').text();
+		var tipdocCambio = $('#tipdoc').val();
+		
+		if(valorSelectOriginal != tipdocCambioTEXT){
+			trHTMLtm += '<tr id="tipodocVP"><td style="border:1px solid #044bb1 !important;">Tipo de documento de identidad</td><td style="border:1px solid #044bb1 !important;">'+ valorSelectOriginal + '</td><td style="border:1px solid #044bb1 !important;"><strong>' + tipdocCambioTEXT + '</strong></td><tr>';
+			var cselec =1;
+		}else{
+			$("#tipodocVP").remove();
+			var cselec =0;
+		}
+		
+		var btncancelarNumDocOriginal =   $('#btncancelarNumDoc').attr('data-valor');//$('#btncancelarNumDoc').data('valor');
+		var txtNumDocCambio = $('#txtNumDoc').val();
+		var txtNumDocCambio = $.trim(txtNumDocCambio);	
+		if(btncancelarNumDocOriginal != txtNumDocCambio){
+			trHTMLtm += '<tr id="numdocVP"><td style="border:1px solid #044bb1 !important;">Número de documento</td><td style="border:1px solid #044bb1 !important;">'+ btncancelarNumDocOriginal + '</td><td style="border:1px solid #044bb1 !important;"><strong>' + txtNumDocCambio + '</strong></td><tr>';		
+			var tnum =1;			
+		}else{			
+			$("#numdocVP").remove();
+			var tnum =0;			
+		}
+		
+		var txtApePatOriginal = $('#btncancelarApePat').attr('data-valor');//$('#btncancelarApePat').data('valor');
+		var txtApePatCambio = $('#txtApePat').val();
+		var txtApePatCambio = $.trim(txtApePatCambio);
+		
+		if(txtApePatOriginal != txtApePatCambio){
+			trHTMLtm += '<tr id="apePatVP"><td style="border:1px solid #044bb1 !important;">Apellido paterno</td><td style="border:1px solid #044bb1 !important;">'+ txtApePatOriginal + '</td><td style="border:1px solid #044bb1 !important;"><strong>' + txtApePatCambio + '</strong></td><tr>';
+			var tapepa =1;
+		}else{			
+			$("#apePatVP").remove();
+			var tapepa =0;
+		}		
+		
+		var btncancelarApeMatOriginal = $('#btncancelarApeMat').attr('data-valor');//$('#btncancelarApeMat').data('valor');
+		var txtApeMat = $('#txtApeMat').val();
+		var txtApeMat = $.trim(txtApeMat);
+		
+		if(btncancelarApeMatOriginal != txtApeMat){
+			trHTMLtm += '<tr id="apeMatVP"><td style="border:1px solid #044bb1 !important;">Apellido materno</td><td style="border:1px solid #044bb1 !important;">'+ btncancelarApeMatOriginal + '</td><td style="border:1px solid #044bb1 !important;"><strong>' + txtApeMat + '</strong></td><tr>';
+			var tapema =1;
+		}else{		
+			$("#apeMatVP").remove();
+			var tapema =0;
+		}		
+		
+		var btncancelarNombreOriginal = $('#btncancelarNombre').attr('data-valor');// $('#btncancelarNombre').data('valor');
+		var txtNombre = $('#txtNombre').val();
+		var txtNombre = $.trim(txtNombre);
+		
+		if(btncancelarNombreOriginal != txtNombre){
+			trHTMLtm += '<tr id="txtNombreVP"><td style="border:1px solid #044bb1 !important;">Nombres</td><td style="border:1px solid #044bb1 !important;">'+ btncancelarNombreOriginal + '</td><td style="border:1px solid #044bb1 !important;"><strong>' + txtNombre + '</strong></td><tr>';
+			var tnom =1;
+		}else{		
+			$("#txtNombreVP").remove();
+			var tnom =0;
+		}
+		
+		var diplomapdf  = $('#diplomapdf').val();
+		var docidenpdf  = $('#docidenpdf').val();		
+		if(diplomapdf == '' || docidenpdf == ''){
+			$('#frmMensajesCorrecciones').modal('show');
+    		$('#frmError_BodyDatos').html('Adjuntar diploma y documento de identidad.');
+		}else{
+			if(diplomapdf.length > 1){			
+			var extensiondi = (diplomapdf.substring(diplomapdf.lastIndexOf("."))).toLowerCase(); 
+			var inputdi = document.getElementById('diplomapdf');
+			var filedi = inputdi.files[0];
+			var sizeBytedi = filedi.size;
+		    var siezekiloBytedi = parseInt(sizeBytedi / 1024);		
+				if(siezekiloBytedi > 8192 || extensiondi != '.pdf'){			
+					$('#frmMensajesCorrecciones').modal('show');
+					$('#frmError_BodyDatos').html('El peso del archivo no debe tener más de 8mb y el archivo tiene que tener formato .pdf');
+					var diplomapdf = 0;
+				}else{
+					var diplomapdf = 1;
+				}
+			}if(docidenpdf.length > 1){				
+				var extensiondoc = (docidenpdf.substring(docidenpdf.lastIndexOf("."))).toLowerCase(); 
+				var inputdoc = document.getElementById('docidenpdf');
+				var filedoc = inputdoc.files[0];
+				var sizeBytedoc = filedoc.size;
+			    var siezekiloBytedoc = parseInt(sizeBytedoc / 1024);		
+				if(siezekiloBytedoc > 8192 || extensiondoc != '.pdf'){			
+					$('#frmMensajesCorrecciones').modal('show');
+					$('#frmError_BodyDatos').html('El peso del archivo no debe tener más de 8mb y el archivo tiene que tener formato .pdf');
+					var docidenpdf = 0;
+				}else{
+					var docidenpdf = 1;
+				}
+			}
+		}
+		/* validaciones */
+		/* TIPO DE DOCUMENTO DNI*/
+		if (tipdocCambio == 1 && txtNumDocCambio.length != 8) {
+			$('#frmMensajesCorrecciones').modal('show');
+    		$('#frmError_BodyDatos').html('Ingresar 8 caracteres en el campo Número de documento.');
+    		return false;
+		} /* TIPO DE DOCUMENTO CARNE DE EXTRANJERIA*/
+		if (tipdocCambio == 3 && txtNumDocCambio.length != 9) {
+			$('#frmMensajesCorrecciones').modal('show');
+    		$('#frmError_BodyDatos').html('Ingresar 9 caracteres en el campo Número de documento.');
+    		return false;
+		}
+		if(cselec == 0 && tnum == 0 && tapepa == 0 && tapema == 0 && tnom == 0){
+			$('#frmMensajesCorrecciones').modal('show');
+    		$('#frmError_BodyDatos').html('No hay cambios en los campos del registro.');
+    		return false;
+		}
+		else if(txtNumDocCambio == '' || txtApePatCambio == '' || txtNombre == '' ){
+			$('#frmMensajesCorrecciones').modal('show');
+    		$('#frmError_BodyDatos').html('No dejar campos en blanco.');
+    		return false;
+		}
+		else if(diplomapdf == 0 || docidenpdf== 0){
+			$('#frmMensajesCorrecciones').modal('show');
+			$('#frmError_BodyDatos').html('Adjuntar los archivos correspondientes.<br>El peso del archivo no debe tener más de 8mb y el archivo tiene que tener formato .pdf');
+		}
+		else{	
+			refrescarC1(); 	
+	    		$("#vista_previa").tab('show');	  
+	    		refrescarC1(); 	    		
+		}
+		$('#finalDataModificacion').append(trHTMLtm);		
+})
+$(document).on('click', '#captchaCorreccion', function (e) {
+		e.preventDefault();
+		refrescarC1();   	
+	});
+function refrescarC1(){
+	$.ajax({
+    	url: '/imageCaptcha',
+    	type: 'GET',
+    	beforeSend: function(){
+			$('#frmProcessEmisionCI').modal('hide');  
+		}
+    })
+    .done(function() {
+		captcha = $("#captchaImgCorre");
+		var img = $('<img>');
+		var d = new Date();
+		var n = d.getMilliseconds();
+		var urlBase = window.location.protocol + "//"+window.document.domain;
+		//var pathname = window.location.origin;//window.location.pathname;
+		img.attr('src', urlBase+'/imageCaptcha');
+		captcha.empty();
+	    captcha.append(img);
+	    $('#captchaCorre').val('').focus();
+    });
+}
+
+$(document).on('click', '#btnenviarVistaPrevia', function() {
+	
+	var condicion = $('#checkCondicion').is(":checked");
+	if(condicion ==  false){
+		$('#frmMensajesCorrecciones').modal('show');
+		$('#frmError_BodyDatos').html('Marcar el acuerdo de las condiciones.');
+	}else
+	{
+		var formulario = $('#frmregistrow')[0];
+		var formData = new FormData(formulario); 
+
+		//var formData = new FormData(this);		
+	    dataEnviar  = new FormData();	  
+	    
+	    var captchaCorre = $("#captchaCorre").val();
+	    var txtNombre = $("#txtNombre").val();	    
+	    var tipodoccorredatosSolicitante = $('#ListatipoDocumentoCorreDatos option:selected').text();
+	    var IDtipodoccorredatosSolicitante = $('#ListatipoDocumentoCorreDatos').val();
+	    var Soli_NumDocIde = $("#Soli_NumDocIde").val();
+	    var Soli_ApePaterno = $("#Soli_ApePaterno").val();
+	    var Soli_ApeMaterno = $("#Soli_ApeMaterno").val();
+	    var Soli_Nombre = $("#Soli_Nombre").val();
+	    var Soli_Email = $("#Soli_Email").val();
+	    var Soli_Telefono = $("#Soli_Telefono").val();
+	    var filecartapoder = $('#filecartapoder').val();	    
+	    var diplomapdf = $('#diplomapdf').val();
+	    var docidenpdf = $('#docidenpdf').val();
+	    
+	    /* correccion de datos*/
+	    var valorSelectOriginal = $('#tipdoc').data('valueselect');
+		var tipdocCambio = $('#tipdoc').val();
+		var btncancelarNumDocOriginal = $('#btncancelarNumDoc').attr('data-valor');//$('#btncancelarNumDoc').data('valor');
+		var txtNumDocCambio = $('#txtNumDoc').val();
+		var txtApePatOriginal = $('#btncancelarApePat').attr('data-valor');//$('#btncancelarApePat').data('valor');
+		var txtApePatCambio = $('#txtApePat').val();
+		var btncancelarApeMatOriginal = $('#btncancelarApeMat').attr('data-valor');//$('#btncancelarApeMat').data('valor');
+		var txtApeMat = $('#txtApeMat').val();
+		var btncancelarNombreOriginal = $('#btncancelarNombre').attr('data-valor');//$('#btncancelarNombre').data('valor');
+		var txtNombre = $('#txtNombre').val();
+		var txtNombreTitulo = $('#txtNombre').val();
+		//var idTitulo = $('#btneditardata').attr('data-id');
+		var idTitulo =$('#btnsiguiedatossolicitante').attr('data-ide'); 
+	    dataEnviar.append('captchaCorre',captchaCorre);
+	    
+	    /* correccion de datos*/
+	    if(valorSelectOriginal != tipdocCambio){
+	    	dataEnviar.append('valorSelectOriginal',valorSelectOriginal);
+	    	dataEnviar.append('tipdocCambio',tipdocCambio);
+	    }else{
+	    	dataEnviar.append('valorSelectOriginal',0);
+	    	dataEnviar.append('tipdocCambio',0);
+	    }
+	    if(btncancelarNumDocOriginal != txtNumDocCambio){
+	    	dataEnviar.append('btncancelarNumDocOriginal',btncancelarNumDocOriginal);
+	    	dataEnviar.append('txtNumDocCambio',txtNumDocCambio);
+	    }else{
+	    	dataEnviar.append('btncancelarNumDocOriginal',0);
+	    	dataEnviar.append('txtNumDocCambio',0);
+	    }
+	    if(txtApePatOriginal != txtApePatCambio){
+	    	dataEnviar.append('txtApePatOriginal',txtApePatOriginal);
+	    	dataEnviar.append('txtApePatCambio',txtApePatCambio);
+	    }else{
+	    	dataEnviar.append('txtApePatOriginal',0);
+	    	dataEnviar.append('txtApePatCambio',0);
+	    }
+	    if(btncancelarApeMatOriginal != txtApeMat){
+	    	dataEnviar.append('btncancelarApeMatOriginal',btncancelarApeMatOriginal);
+	    	dataEnviar.append('txtApeMat',txtApeMat);
+	    }else{
+	    	dataEnviar.append('btncancelarApeMatOriginal',0);
+	    	dataEnviar.append('txtApeMat',0);
+	    }
+	    if(btncancelarNombreOriginal != txtNombre){
+	    	dataEnviar.append('btncancelarNombreOriginal',btncancelarNombreOriginal);
+	    	dataEnviar.append('txtNombre',txtNombre);
+	    }else{
+	    	dataEnviar.append('btncancelarNombreOriginal',0);
+	    	dataEnviar.append('txtNombre',0);
+	    }	    
+	  
+	    /*datos solicitante*/
+	    dataEnviar.append('tipodoccorredatosSolicitante',tipodoccorredatosSolicitante);
+	    dataEnviar.append('Soli_NumDocIde',Soli_NumDocIde);
+	    dataEnviar.append('Soli_ApePaterno', Soli_ApePaterno);
+	    dataEnviar.append('Soli_ApeMaterno', Soli_ApeMaterno);
+	    dataEnviar.append('Soli_Nombre', Soli_Nombre);
+	    dataEnviar.append('IDtipodoccorredatosSolicitante', IDtipodoccorredatosSolicitante);
+	    dataEnviar.append('Soli_NombreSolicitante',Soli_ApePaterno+' '+Soli_ApeMaterno+','+' '+Soli_Nombre);
+	    dataEnviar.append('Soli_NombreSoloSolicitante',Soli_Nombre);
+	    dataEnviar.append('Soli_Email',Soli_Email);
+	    dataEnviar.append('Soli_Telefono',Soli_Telefono);
+	    dataEnviar.append('filecartapoder',filecartapoder);
+	    dataEnviar.append('txtNombreTitulo',txtNombreTitulo);
+	    /* archivos */
+	    dataEnviar.append('filecartapoder',filecartapoder);
+	    dataEnviar.append('diplomapdf',diplomapdf);
+	    dataEnviar.append('docidenpdf',docidenpdf);
+	    dataEnviar.append('idTitulo',idTitulo);
+	    var filesArr = $('.filestyle');
+	    jQuery.each(jQuery('.filestyle'), function(i, file) {
+	        if(filesArr[i].files[0] != undefined){
+	          dataEnviar.append(filesArr[i].name, filesArr[i].files[0]);
+	        }
+	    });
+	    
+		$.ajax({
+			  url: 'saveCorreccion',
+			  type: 'POST',	 
+			  data: dataEnviar,
+			  cache: false,
+		      processData: false,
+		      contentType: false,
+			  beforeSend: function(){	 
+			   $('#frmProcessCorreccion').modal({
+			     backdrop: 'static',
+			     keyboard: false
+			   });            
+			 },
+			 complete: function(data){   
+			 },
+			 success: function (data) {		
+			 $('#frmProcessCorreccion').modal('toggle');   
+			 if (data.response == 'error'){
+			 	$('#frmMensajesCorrecciones').modal('show');
+				$('#frmError_BodyDatos').html('El código de verificación es incorrecto.');
+				
+			 }else if(data === 0){	
+				 $('#frmMensajesCorrecciones').modal('show');
+				 $('#frmError_BodyDatos').html('<p>El código de verificación es incorrecto</p>');								
+			 }
+			 else if(data === 2){ 		 
+				 $('#frmMensajesCorrecciones').modal('show');
+				 $('#frmError_BodyDatos').html('<p>El archivo .pdf cargado pesa más de lo estimado 8mb</p>');				
+				 $('#captchaCorreccion').attr("disabled",false);
+				 $('#btnEnviarcontacto').attr("disabled",false);
+				 $('#btnPrev').attr("disabled",false);
+			 }
+			 else if(data === 3){ 		 
+				  $('#frmMensajesCorrecciones').modal('show');
+				  $('#frmError_BodyDatos').html('<p>El archivo cargado no tiene el formato .pdf</p>');
+				
+				 $('#captchaCorreccion').attr("disabled",false);
+				 $('#btnEnviarcontacto').attr("disabled",false);
+				 $('#btnPrev').attr("disabled",false);
+			 }
+			 else if(data === 4){ 		 
+				 $('#frmMensajesCorrecciones').modal('show');
+				 $('#frmError_BodyDatos').html('<p>El archivo cargado no tiene el formato .zip o .war</p>');				 
+				 $('#captchaCorreccion').attr("disabled",false);
+				 $('#btnEnviarcontacto').attr("disabled",false);
+				 $('#btnPrev').attr("disabled",false);
+			 }
+			 else if(data === 5){ 		 
+				 $('#frmMensajesCorrecciones').modal('show');
+				 $('#frmError_BodyDatos').html('<p>Se tiene que cargar una diploma y documento de identidad</p>');
+				 
+				 $('#captchaCorreccion').attr("disabled",false);
+				 $('#btnEnviarcontacto').attr("disabled",false);
+				 $('#btnPrev').attr("disabled",false);
+			 }
+			 else if(data === 6){ 		 
+				 $('#frmMensajesCorrecciones').modal('show');
+				 $('#frmError_BodyDatos').html('<p>Se tiene que cargar una diploma y documento de identidad.</p>');
+				 
+				 $('#captchaCorreccion').attr("disabled",false);
+				 $('#btnEnviarcontacto').attr("disabled",false);
+				 $('#btnPrev').attr("disabled",false);
+			 }
+			 else if(data === 7){ 		 
+				 $('#frmMensajesCorrecciones').modal('show');
+				 $('#frmError_BodyDatos').html('<p>Error al registrar la solicitud de correccción de datos personales.</p>');
+				 
+				 $('#captchaCorreccion').attr("disabled",false);
+				 $('#btnEnviarcontacto').attr("disabled",false);
+				 $('#btnPrev').attr("disabled",false);
+			 }
+			 else { 
+				 $('#mensajedatossolicitantes').modal('hide');
+				 $('#myModalpestanas').modal('hide');
+				 $('#frmSuccessCorreccion_Body').html('<p>La solicitud fue enviada con éxito. Gracias!!</p>');
+				 $('#frmSuccessCorreccion').modal('show');				
+				 $('#captchaCorreccion').attr("disabled",false);				 
+				 limpiarCorreccion();
+				 setTimeout(function(){
+			           location.reload(); 
+			      }, 8000);
+			 }
+			 refrescarC1();
+			 },
+			error: function(errors){   
+			           $('#frmProcessCorreccion').modal('hide');
+		           $('#frmErrorAutoridad').modal('show');
+		           refrescarC1();
+		         }
+
+		       });
+	}
+});
+
+/*CORRECCION DE DATOS*/
+$(document).on('click', '#btneditarTipDoc', function() {
+	$("#btneditarTipDoc").removeClass("glyphicon glyphicon-edit");
+	$("#btneditarTipDoc").addClass("glyphicon glyphicon-floppy-disk");
+	$('#tipdoc').attr("disabled", false);
+});
+$(document).on('click', '#btncancelarTipDoc', function() {
+	$("#btneditarTipDoc").removeClass("glyphicon glyphicon-floppy-disk");
+	$("#btneditarTipDoc").addClass("glyphicon glyphicon-edit");
+	$('#tipdoc').attr("disabled", true);
+	var valor = $('#tipdoc').data('valueselect');
+	if (valor == 'DNI') {
+		valor = 1;
+	}else if (valor == 'PASAPORTE'){
+		valor = 2;
+	}else{
+		valor = 3;
+	}
+	$('#tipdoc').val(valor);
+});
+/* campo Número de documento*/
+$(document).on('click', '#btneditarNumDoc', function() {	
+	$("#btneditarNumDoc").removeClass("glyphicon glyphicon-edit");
+	$("#btneditarNumDoc").addClass("glyphicon glyphicon-floppy-disk");
+	$('#txtNumDoc').attr("disabled", false);
+});
+$(document).on('click', '#btncancelarNumDoc', function() {
+	$("#btneditarNumDoc").removeClass("glyphicon glyphicon-floppy-disk");
+	$("#btneditarNumDoc").addClass("glyphicon glyphicon-edit");
+	$('#txtNumDoc').attr("disabled", true);
+	//var valor = $(this).data('valor');
+	var valor =  $('#btncancelarNumDoc').attr('data-valor');	
+	$('#txtNumDoc').val(valor);
+});
+/* campo Apellido paterno*/
+$(document).on('click', '#btneditarApePat', function() {	
+	$("#btneditarApePat").removeClass("glyphicon glyphicon-edit");
+	$("#btneditarApePat").addClass("glyphicon glyphicon-floppy-disk");
+	$('#txtApePat').attr("disabled", false);
+});
+$(document).on('click', '#btncancelarApePat', function() {	
+	$("#btneditarApePat").removeClass("glyphicon glyphicon-floppy-disk");
+	$("#btneditarApePat").addClass("glyphicon glyphicon-edit");
+	$('#txtApePat').attr("disabled", true);
+	//var valor = $(this).data('valor');
+	var valor =  $('#btncancelarApePat').attr('data-valor');
+	$('#txtApePat').val(valor);
+});
+/* campo Apellido materno*/
+$(document).on('click', '#btneditarApeMat', function() {	
+	$("#btneditarApeMat").removeClass("glyphicon glyphicon-edit");
+	$("#btneditarApeMat").addClass("glyphicon glyphicon-floppy-disk");
+	$('#txtApeMat').attr("disabled", false);
+});
+$(document).on('click', '#btncancelarApeMat', function() {	
+	$("#btneditarApeMat").removeClass("glyphicon glyphicon-floppy-disk");
+	$("#btneditarApeMat").addClass("glyphicon glyphicon-edit");
+	$('#txtApeMat').attr("disabled", true);
+	//var valor = $(this).data('valor');
+	var valor =  $('#btncancelarApeMat').attr('data-valor');
+	$('#txtApeMat').val(valor);
+});
+/* campo Nombre*/
+$(document).on('click', '#btneditarNombre', function() {	
+	$("#btneditarNombre").removeClass("glyphicon glyphicon-edit");
+	$("#btneditarNombre").addClass("glyphicon glyphicon-floppy-disk");
+	$('#txtNombre').attr("disabled", false);
+});
+$(document).on('click', '#btncancelarNombre', function() {
+	$("#btneditarNombre").removeClass("glyphicon glyphicon-floppy-disk");
+	$("#btneditarNombre").addClass("glyphicon glyphicon-edit");
+	$('#txtNombre').attr("disabled", true);
+	//var valor = $(this).data('valor');
+	var valor =  $('#btncancelarNombre').attr('data-valor');
+	$('#txtNombre').val(valor);
+});
+
+
+$("body").on('keydown','.solonumeros',function(event) {
+	if(event.shiftKey)
+	{
+		event.preventDefault();
+	}
+
+	if (event.keyCode == 46 || event.keyCode == 8)    {
+	}
+	else {
+		if (event.keyCode < 95) {
+			if (event.keyCode < 48 || event.keyCode > 57) {
+				event.preventDefault();
+			}
+		} 
+		else {
+			if (event.keyCode < 96 || event.keyCode > 105) {
+				event.preventDefault();
+			}
+		}
+	} 
+});
+$(document).ready(function() {
+	$("#datos_solicitante").prop("disabled", true);
+	$("#correccion_datos").prop("disabled", true);
+	$("#vista_previa").prop("disabled", true);
+});
+$(document).ready(function() {
+$('#Soli_ApePaterno').attr('readonly',true);
+$('#Soli_ApePaterno').attr('disabled',true);
+$('#Soli_ApePaterno').val('');
+$('#Soli_ApeMaterno').attr('readonly',true);
+$('#Soli_ApeMaterno').attr('disabled',true);
+$('#Soli_ApeMaterno').val('');
+$('#Soli_Nombre').attr('readonly',true);
+$('#Soli_Nombre').attr('disabled',true);
+});
+
+/* validaciones de tipo de documento e input numero de documento */
+
+$(document).on('change', '#tipdoc', function() {
+	var tipodocCorredatos = $('#tipdoc').val();
+	if (tipodocCorredatos == 1) {
+		$("#txtNumDoc").attr('minlength','8');
+		$("#txtNumDoc").attr('maxlength','8');
+	}
+	else if (tipodocCorredatos == 3) {
+		$("#txtNumDoc").attr('minlength','9');
+		$("#txtNumDoc").attr('maxlength','9');
+	}else{
+		$("#txtNumDoc").attr('minlength','5');
+		$("#txtNumDoc").attr('maxlength','20');
+	}
+
+});

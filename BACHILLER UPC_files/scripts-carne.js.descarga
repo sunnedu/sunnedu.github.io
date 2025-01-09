@@ -1,0 +1,35 @@
+
+/* catpcha */
+$("body").on('click', '#captchaCarne', function (e) {
+    e.preventDefault();
+    refrescarCarne();     
+  });
+
+
+function refrescarCarne(){
+	$('#captcha_cu').val('').focus();
+    $.ajax({
+      url: '/imageCaptcha',
+      type: 'GET',
+      beforeSend: function(){
+      $('#frmProcessEmisionCI').modal('hide');  
+    }
+    })
+    .done(function() {
+    captcha = $("#captchaImgCarne");
+    var img = $('<img>');
+    var d = new Date();
+    var n = d.getMilliseconds();
+    var urlBase = window.location.protocol + "//"+window.document.domain;
+    img.attr('src', urlBase+'/imageCaptcha');
+    captcha.empty();
+      captcha.append(img);
+      $('#captcha_cu').val('').focus();
+    })
+    .fail(function() {
+    })
+    .always(function() {
+    });
+
+}
+setInterval("refrescarCarne()",6*60*1000);

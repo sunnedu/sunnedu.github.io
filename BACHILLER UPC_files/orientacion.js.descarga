@@ -1,0 +1,716 @@
+function limpiarForm(dni){
+	$("#orientaRecoForm")[0].reset();
+	$('#selectorientapaisproc').val('0'); // Select the option with a value of '1'
+	$('#selectorientapaisproc').trigger('change'); 
+}
+$('.openformPer').click(function(event) {
+	limpiarForm();
+	$('#selectorientapaisproc').select2();
+	/* Modal de bienvenida*/
+	$('#messageTitulo').html('Bienvenido a la Orientación');   
+	$('#messageContenido').html('<p>Estimado/a usuario/a:</p>'+
+	'<p>Este formulario es de carácter orientativo y sirve solamente para recibir asesoría para el reconocimiento de Grados y Títulos Extranjeros. <b>Asimismo, resaltamos que esta orientación no es obligatoria y no tiene como consecuencia el inicio del trámite de reconocimiento.</b></p>'+
+	'<p>Este servicio brinda información y asesoría, completamente gratuita.</p>'); 
+	$('#modal-info').modal('show');
+	/* lista tipo de documento de identidad */
+	var tipo ='ID_TBL_TIPO_DOCUMENTO_IDENTIDAD';
+	$.ajax({
+		url: '/getOrientaItems',
+		type: 'POST',
+		dataType: 'json',
+		data: {tipo: tipo},
+	})
+	.done(function(data) {
+		$('#orientalistatipodoc').empty();      
+		var $select = $('#orientalistatipodoc');
+		$('#orientalistatipodoc').append('<option value="0" selected disabled>'+"Seleccionar"+'</option>');
+		$.each(data, function(i, val){     
+		  	$('#orientalistatipodoc').append('<option value="'+val.value+'">'+val.text+'</option>'); //ABREVIATURA
+		});
+	})
+	.fail(function() {
+		console.log("error lista doc");
+	})
+	.always(function() {
+		//console.log("complete");
+	});
+
+	// para obtener la lista de grados o titulos
+	var gradotitulo ='ID_TBL_GRADO_ACADEMICO';
+	$.ajax({
+		url: '/getOrientaItems',
+		type: 'POST',
+		dataType: 'json',
+		data: {tipo: gradotitulo},
+	})
+	.done(function(data) {
+		$('#selectorientagradoaca').empty();      
+		var $select = $('#selectorientagradoaca');
+		$('#selectorientagradoaca').append('<option value="0" selected disabled>'+"Seleccionar"+'</option>');
+		$.each(data, function(i, valo){     
+		  	$('#selectorientagradoaca').append('<option value="'+valo.value+'">'+valo.text+'</option>');
+		});
+	})
+	.fail(function() {
+		console.log("error lista grado aca");
+	})
+	.always(function() {
+		//console.log("complete");
+	});
+
+	/* lista de paises */
+	$.ajax({
+		url: '/getPaisesOrienta',
+		type: 'GET',
+		dataType: 'json',
+	})
+	.done(function(data) {
+		$('#selectorientapaisproc').empty();      
+		var $select = $('#selectorientapaisproc');
+		$('#selectorientapaisproc').append('<option value="0" selected disabled>'+"Seleccionar"+'</option>');
+		$.each(data, function(i, valp){ 
+			if (valp.codigo != 9233) {
+		  		$('#selectorientapaisproc').append('<option value="'+valp.codigo+'">'+valp.nombre+'</option>');
+			}    
+		});
+	})
+	.fail(function() {
+		console.log("error lista paises");
+	})
+	.always(function() {
+		//console.log("complete");
+	});
+
+	// para obtener la lista de grados o titulos
+	var veridiploma ='ID_TBL_VERIFICACION_DIPLOMA';
+	$.ajax({
+		url: '/getOrientaItems',
+		type: 'POST',
+		dataType: 'json',
+		data: {tipo: veridiploma},
+	})
+	.done(function(data) {
+		$('#selectorientatipoveri').empty();      
+		var $select = $('#selectorientatipoveri');
+		$('#selectorientatipoveri').append('<option value="0" selected disabled>'+"Seleccionar"+'</option>');
+		$.each(data, function(i, valveri){     
+		  	$('#selectorientatipoveri').append('<option value="'+valveri.value+'">'+valveri.text+'</option>');
+		});
+	})
+	.fail(function() {
+		console.log("error tipo de verifi");
+	})
+	.always(function() {
+		//console.log("complete");
+	});
+
+});
+/* validación tipo de verficación */
+$(document).on('change', '#selectorientatipoveri', function() {
+	var selecttipoveri = $('#selectorientatipoveri').val();
+	if ( selecttipoveri == 1) {
+		$('input[name="fileorientaapostilla"]').rules('add', {
+			required:true,
+			//number: true,
+			minlength:1,
+			//maxlength:8,
+			messages: {
+				required: "Debe adjuntar la apostilla",
+			  	minlength:"Debe adjuntar la apostilla",			  	
+			}
+		});
+	}else if(selecttipoveri == 2){
+		$('input[name="fileorientalegal"]').rules('add', {
+			required:true,
+			//number: true,
+			minlength:1,
+			//maxlength:8,
+			messages: {
+				required: "Debe adjuntar la legalización",
+			  	minlength:"Debe adjuntar la legalización",			  	
+			}
+		});
+	}else{
+		$('input[name="fileorientabd"]').rules('add', {
+			required:true,
+			//number: true,
+			minlength:1,
+			//maxlength:8,
+			messages: {
+				required: "Debe adjuntar la base de datos",
+			  	minlength:"Debe adjuntar la base de datos",			  	
+			}
+		});
+	}
+});
+/*validacion lista de tipo de documento*/
+$(document).on('change', '#orientalistatipodoc', function() {
+	$('#txtorientanumdocide-error').css('display','none');
+	var idDoc = $('#orientalistatipodoc').val();
+	var dni = $('#txtorientanumdocide').val();
+	jQuery.validator.addMethod("noSpace", function(value, element) { 
+      return value == '' || value.trim().length != 0;  
+    }, "Eliminar los espacios al inicio.");
+
+    $('#txtorientanumdocide').keypress(function( e ) {
+       if(e.which === 32) 
+         return false;
+    });
+    $.validator.addMethod("alphanumeric", function(value, element) {
+    return this.optional(element) || /^[\w ]+$/i.test(value);
+    }, "Ingresar letras y/o números");
+
+    $('#txtorientanumdocide').bind('cut copy paste', function (e) {
+        e.preventDefault();
+    });		
+	if (idDoc == 1){
+		$('#txtorientanumdocide').val('');
+	    $('#txtorientanumdocide').attr('minlength', 8);
+	    $('#txtorientanumdocide').attr('maxlength', 8);  
+		$("#txtorientanumdocide").removeAttr('disabled');
+		$('#txtorientanumdocide').addClass('solonumeros'); 
+		$("#btnreniec").css("display", "");
+     	$('input[name="txtorientanumdocide"]').rules('remove');      
+		$('input[name="txtorientanumdocide"]').rules('add', {
+			required:true,
+			number: true,
+			minlength:8,
+			maxlength:8,
+			messages: {
+				required: "Debe ingresar el número de documento",
+			  	minlength:"El campo número de documento debe contener 8 dígitos",
+			  	number:"Debe ingresar sólo números"
+			}
+		});
+		$('input[name="txtorientanombres"]').rules('add', {
+			required:true,
+			minlength:2,
+			maxlength:50,
+			messages: {
+			  required: "Debe ingresar sus nombres",
+			  minlength:"Ingresar al menos 2 caractéres"
+			},
+			noSpace: true
+		});
+
+		$('input[name="txtorientaapellidopat"]').rules('add', {
+			required:true,
+			minlength:2,
+			maxlength:50,
+			messages: {
+			  required: "Debe ingresar su apellido paterno",
+			  maxlength:"Ingresar al menos 2 caractéres"
+			},
+			noSpace: true
+		});
+
+      	$('input[name="txtciapellidomat"]').rules('add', {
+        	maxlength:50,
+        	messages: {
+          		required: "Debe ingresar su apellido materno",
+          		maxlength:"Ingresar al menos 2 caractéres"
+        	},
+        	noSpace: true
+      	});
+    }else{
+		$('#txtorientanumdocide').val('');	 
+		 $('#txtorientanumdocide').attr('minlength', 6);
+	    $('#txtorientanumdocide').attr('maxlength', 14);   
+		$("#txtorientanumdocide").removeAttr('disabled');
+		$('#txtorientanombres').removeAttr('disabled');
+		$('#txtorientanombres').val('');  
+		$('#txtorientaapellidopat').removeAttr('disabled');
+		$('#txtorientaapellidopat').val('');  
+		$('#txtorientaapellidomat').removeAttr('disabled');
+		$('#txtorientaapellidomat').val('');  
+		$('#txtorientanumdocide').removeClass('solonumeros');
+		$("#btnreniec").css("display", "none");
+      $('#txtorientanumdocide').rules('remove'); 
+      
+      $('#txtorientanumdocide').rules('add', {
+        required:true,
+        number: false,
+        minlength:6,
+        maxlength:14,
+        messages: {
+          required: "Debe ingresar el número de documento",
+          minlength:"El campo número de documento debe contener mínimo 6 dígitos",
+          maxlength:"El campo número de documento debe contener máximo 14 dígitos",
+          //number:"Debe ingresar sólo números"
+        },
+        alphanumeric:true
+      });     
+    
+      $('input[name="txtorientanombres"]').rules('add', {
+        required:true,
+        minlength:2,
+        maxlength:50,
+        messages: {
+          required: "Debe ingresar su nombre",
+          minlength:"Ingresar al menos 2 caractéres"
+        },
+        noSpace: true
+      });
+
+      $('input[name="txtorientaapellidopat"]').rules('add', {
+        required:true,
+        minlength:2,
+        maxlength:50,
+        messages: {
+          required: "Debe ingresar su apellido paterno",
+          minlength:"Ingresar al menos 2 caractéres",
+          maxlength:"El campo apellido paterno debe contener 50 caractéres como máximo"
+        },
+        noSpace: true
+      });
+
+      $('input[name="txtciapellidomat"]').rules('add', {
+        required:false,
+        maxlength:50,
+        messages: {
+          required: "Debe ingresar su apellido materno",
+          minlength:"Ingresar al menos 2 caractéres",
+          maxlength:"El campo apellido materno debe contener 50 caractéres como máximo"
+        },
+        noSpace: true
+      });
+    }
+});
+/* busqueda en reniec */
+$('#btnreniec').click(function(event) {	
+	var dni = $('#txtorientanumdocide').val();
+  	if (dni.length == 8 ) {
+  		$('#dvContFormOrienta').css('display','block');
+	   	$('#dvGuiasPerGyt').css('display','none');
+		buscarDni(dni);
+  	}
+});
+
+$(document).on('change', '#selectorientatipoveri', function() {
+	var idDoc = $('#selectorientatipoveri').val();
+	if (idDoc == 1) {
+		$("#divApostilla").css("display", "block");
+		$("#divLegal").css("display", "none");
+		$("#divBd").css("display", "none");
+	}else if (idDoc == 2) {
+		$("#divApostilla").css("display", "none");
+		$("#divLegal").css("display", "block");
+		$("#divBd").css("display", "none");
+	}else if (idDoc == 3) {
+		$("#divApostilla").css("display", "none");
+		$("#divLegal").css("display", "none");
+		$("#divBd").css("display", "block");
+	}
+});
+
+function buscarDni(dni){   
+    $('#frmProcessOrienta').modal('show');
+	$('#dvContFormOrienta').css('display','block');
+    $('#dvGuiasPerGyt').css('display','none');
+    var token = $('#token').val();
+	$.ajax({
+      url: 'buscarnumdoc',
+      type: 'POST',
+      dataType: 'json',
+      data: {txtnumdocumento: dni,_token:token}
+     
+    })
+    .done(function(data) {
+    	$('#dvGuiasPerGyt').css('display','none');
+    	$('#dvContFormOrienta').css('display','block');
+      	var codigo = data['respuesta'].cGenerico;
+      	if(codigo == '00000')
+     	{     		
+     		$('#dvContFormOrienta').css('display','block');
+    		$('#dvGuiasPerGyt').css('display','none');
+     		$('#frmProcessOrienta').modal('hide');
+        	var output = data['outPut'].coResultado;
+        	if (output == '0000') {
+     			$('#dvContFormOrienta').css('display','block');
+        		$('#dvGuiasPerGyt').css('display','none');
+        		$('#frmProcessOrienta').modal('hide');
+	          	var nombres = data['outPut'].datosPersona['prenombres'];
+	          	var apellidoPaterno = data['outPut'].datosPersona['apPrimer'];
+	          	var apellidoMaterno = data['outPut'].datosPersona['apSegundo']; 
+    	          
+				$("#txtorientanombres").attr('disabled','disabled');
+				$('#txtorientanombres').val(nombres);
+				$("#txtorientaapellidopat").attr('disabled','disabled');
+				$('#txtorientaapellidopat').val(apellidoPaterno);
+				$("#txtorientaapellidomat").attr('disabled','disabled');
+				$('#txtorientaapellidomat').val(apellidoMaterno);   
+	        }else{     			
+				$('#frmError_BodyOrienta').html('No se obtuvo información para el número de DNI ' + dni + ' .Por favor, digite los datos solicitados');
+				$('#frmErrorOrienta').modal('show'); 
+				openinfoPer();
+			//	limpiarForm();
+	        }
+        }
+        else if(codigo == 'errortoken'){     			
+         	$('#frmProcessOrienta').modal('hide');
+          	$('#frmError_BodyOrienta').html('<p>En estos momentos no se puede terminar la operación, por favor inténtelo nuevamente en unos minutos.</p>');
+          	$('#frmErrorOrienta').modal('show');
+          	openinfoPer();
+       	}
+        else
+        {  
+            $('#frmError_BodyOrienta').html('No se obtuvo información para el número de DNI ' + dni + ' .Por favor, digite los datos solicitados');
+            $('#frmErrorOrienta').modal('show'); 
+        	openinfoPer();
+        //    limpiarForm();
+        }   
+    })
+    .fail(function() {
+    	$('#frmError_BodyOrienta').html('No se obtuvo información para el número de DNI ' + dni + ' .Por favor, digite los datos solicitados');
+        $('#frmErrorOrienta').modal('show');
+        //openinfoPer();    	
+    })
+    .always(function() {
+      //console.log("complete");
+    });
+}
+
+
+$("body").on('keydown','.solonumeros',function(event) {
+  if(event.shiftKey)
+  {
+    event.preventDefault();
+  }
+
+  if (event.keyCode == 46 || event.keyCode == 8)    {
+  }
+  else {
+    if (event.keyCode < 95) {
+      if (event.keyCode < 48 || event.keyCode > 57) {
+        event.preventDefault();
+      }
+    } 
+    else {
+      if (event.keyCode < 96 || event.keyCode > 105) {
+        event.preventDefault();
+      }
+    }
+  }
+});
+
+//CONTADOR DE CARACTERES PARA EL TEXTAREA
+var limit = 1000;
+$(function() {
+    $("#txtorientaconsulta").on("input", function () {
+        var init = $(this).val().length;
+        total_characters = (limit - init);
+        $('#contadorOri').html("<b>"+total_characters + "</b> caracteres restantes");
+    });
+});
+
+$('#btnAceptarmodal,#closeModalmensaje').click(function(event) {
+	 $('#modal-info').modal('hide');
+});
+$('#closeerrororienta').click(function(event) {
+	 $('#frmErrorOrienta').modal('hide');
+});
+$('#closeModalSuccesOrienta').click(function(event) {
+	 $('#frmSuccessOrienta').modal('hide');
+});
+
+$('#btnEnviarOrienta').on('click', function() {
+	//console.log((document.getElementById('fileorientaadjdipl').files[0].size)/1024);
+	var pesoadicional = 0;
+	if (document.getElementById('fileorientaapostilla').files[0]) {
+		var pesoaverifica 	= document.getElementById('fileorientaapostilla').files[0].size/1024;
+	}else if(document.getElementById('fileorientalegal').files[0]){
+		var pesoaverifica 		= document.getElementById('fileorientalegal').files[0].size/1024; 
+	}else if(document.getElementById('fileorientabd').files[0]){
+		var pesoaverifica 		= document.getElementById('fileorientabd').files[0].size/1024; 
+	}
+	if (document.getElementById('fileorientadocadi').files[0]) {
+		var pesoadicional 	= document.getElementById('fileorientadocadi').files[0].size/1024;
+	}
+	if (document.getElementById('fileorientaadjdipl').files[0]) {
+		var pesodiploma 	= document.getElementById('fileorientaadjdipl').files[0].size/1024;
+	}
+	if (pesoaverifica > 8192 || pesodiploma > 8192  || pesoadicional > 8192) {
+		$('#frmErrorOrienta').modal('show');
+		$('#frmError_BodyOrienta').html('<p>Verificar que los adjuntos que no excedan los 8mb.</p>');
+		$('#dvGuiasPerGyt').css('display','none');
+		$('#dvContFormOrienta').css('display','block');
+	}
+  	else if ($('#orientaRecoForm').valid()) {
+  		var formulario = $('#orientaRecoForm')[0];
+		var formData = new FormData(formulario); 
+  		dataEnviarorienta  = new FormData();
+  		
+  		var IdTblTipoDocumento		= $("#orientalistatipodoc").val();
+  		var TipoDocumento 			= $("#orientalistatipodoc  option:selected").text();
+  		var NumeroDocumento 		= $("#txtorientanumdocide").val();
+  		var PrimerApellido 			= $("#txtorientaapellidopat").val();
+  		var SegundoApellido 		= $("#txtorientaapellidomat").val();
+  		var Nombres	 				= $("#txtorientanombres").val();
+  		var NumeroTelefono 			= $("#txtorientatelmovil").val();
+  		var CorreoElectronico		= $("#txtorientacorreo").val();
+  		var IdGradoAcademico 		= $("#selectorientagradoaca").val();
+  		var NombreGradoAcademico	= $("#selectorientagradoaca  option:selected").text();
+  		var IdPaisExtranjero 		= $("#selectorientapaisproc").val();
+  		var NombrePaisExtranjero	= $("#selectorientapaisproc  option:selected").text();
+  		var NombreUniversidad		= $("#txtorientanomuni").val();
+  		var IdTblTipoVerificacion 	= $("#selectorientatipoveri").val();
+  		var NombreVerificacion		= $("#selectorientatipoveri  option:selected").text();
+  		var captchaorienta          = $("#captchaorienta").val();	  		
+  		var Consulta 				= $("#txtorientaconsulta").val();
+  		/*datos formulario */
+	    dataEnviarorienta.append('IdTblTipoDocumento',IdTblTipoDocumento);
+	    dataEnviarorienta.append('TipoDocumento',TipoDocumento);
+	    dataEnviarorienta.append('NumeroDocumento',NumeroDocumento);
+	    dataEnviarorienta.append('PrimerApellido', PrimerApellido);
+	    dataEnviarorienta.append('SegundoApellido', SegundoApellido);
+	    dataEnviarorienta.append('Nombres', Nombres);
+	    dataEnviarorienta.append('NumeroTelefono', NumeroTelefono);
+	    dataEnviarorienta.append('CorreoElectronico',CorreoElectronico);
+	    dataEnviarorienta.append('IdGradoAcademico',IdGradoAcademico);
+	    dataEnviarorienta.append('NombreGradoAcademico',NombreGradoAcademico);
+	    dataEnviarorienta.append('IdPaisExtranjero',IdPaisExtranjero);
+	    dataEnviarorienta.append('NombrePaisExtranjero',NombrePaisExtranjero);
+	    dataEnviarorienta.append('NombreUniversidad',NombreUniversidad);
+	    dataEnviarorienta.append('IdTblTipoVerificacion',IdTblTipoVerificacion);
+	    dataEnviarorienta.append('NombreVerificacion',NombreVerificacion);
+	    dataEnviarorienta.append('Consulta',Consulta);
+	    dataEnviarorienta.append('captchaorienta',captchaorienta);
+	    dataEnviarorienta.append('fileorientaapostilla', $( '#fileorientaapostilla' )[0].files[0]);
+	    dataEnviarorienta.append('fileorientalegal', $( '#fileorientalegal' )[0].files[0]);
+	    dataEnviarorienta.append('fileorientabd', $( '#fileorientabd' )[0].files[0]);
+	    dataEnviarorienta.append('fileorientaadjdipl', $( '#fileorientaadjdipl' )[0].files[0]);
+	    dataEnviarorienta.append('fileorientadocadi', $( '#fileorientadocadi' )[0].files[0]);	    
+	    $('#frmProcessOrienta').modal('show');
+   	 	$('#dvGuiasPerGyt').css('display','none');
+		$('#dvContFormOrienta').css('display','block');
+		$.ajax({
+			url: '/formOrientaReco',
+			type: 'POST',	 
+			data: dataEnviarorienta,
+			cache: false,
+		    processData: false,
+		    contentType: false,			
+			complete: function(data){   
+			},
+			success: function (data) {	
+				if (data.response == 'error'){		
+						
+					$('#frmProcessOrienta').modal('hide');
+					$('#frmErrorOrienta').modal('show');
+					$('#frmError_BodyOrienta').html('<p>'+data.message+'</p>');
+	   	 			$('#dvGuiasPerGyt').css('display','none');
+					$('#dvContFormOrienta').css('display','block');
+					refrescarCorienta();
+				}else if(data.response == 'errorPeso'){
+					
+					$('#frmSuccessOrienta').modal('show');
+					$('#frmSuccessOrienta_Body').html('<p>'+data.message+'</p>');
+   	 				$('#dvGuiasPerGyt').css('display','none');
+					$('#dvContFormOrienta').css('display','block');
+					$('#frmProcessOrienta').modal('hide');
+					//limpiarForm();
+					refrescarCorienta();
+				}else if(data.success == 'true'){
+						
+					$('#frmSuccessOrienta').modal('show');
+					$('#frmSuccessOrienta_Body').html('<p>'+data.message+'</p>');
+   	 				$('#dvGuiasPerGyt').css('display','none');
+					$('#dvContFormOrienta').css('display','block');
+					$('#frmProcessOrienta').modal('hide');
+					limpiarForm();
+					refrescarCorienta();
+				}else if(data.success == 'false'){
+						
+					$('#frmErrorOrienta').modal('show');
+					$('#frmError_BodyOrienta').html('<p>'+data.message+'</p>');
+   	 				$('#dvGuiasPerGyt').css('display','none');
+					$('#dvContFormOrienta').css('display','block');
+					$('#frmProcessOrienta').modal('hide');
+					//limpiarForm();
+					refrescarCorienta();
+				}							 
+			},
+			error: function(errors){ 
+					
+				if(errors.responseText){
+					$('#frmSuccessOrienta').modal('show');
+					$('#frmSuccessOrienta_Body').html('<p>La solicitud fue enviada con éxito. Gracias</p>');
+   	 				$('#dvGuiasPerGyt').css('display','none');
+					$('#dvContFormOrienta').css('display','block');
+					$('#frmProcessOrienta').modal('hide');
+					limpiarForm();
+					refrescarCorienta();
+				}else{
+					
+			        $('#frmErrorOrienta').modal('show');
+			        $('#frmError_BodyOrienta').html('<p>Error al registrar la orientación.</p>');
+				    $('#frmProcessOrienta').modal('hide');					
+			   	 	$('#dvGuiasPerGyt').css('display','none');
+					$('#dvContFormOrienta').css('display','block');
+			        refrescarCorienta();
+				}  
+		    }
+		}); 	
+
+  }else{
+    $('#frmError_BodyOrienta').html('Ingresar o seleccionar todos los campos obligatorios. <span style="color:red">*</span>');
+    $('#frmErrorOrienta').modal('show');
+  	$('#dvGuiasPerGyt').css('display','none');
+	$('#dvContFormOrienta').css('display','block');
+  }
+});
+/*validacion formulario orientaRecoForm*/
+$("#orientaRecoForm").validate({
+	errorClass: "my-error-class",
+	validClass: "my-valid-class",
+  	rules: {
+    	orientalistatipodoc: { 
+      		required: true,
+    	},    
+    	txtorientanumdocide: { 
+      		required: true,
+      		min: 2
+    	},
+    	txtorientanombres: { 
+      		required: true,
+      		minlength:2,       
+      		maxlength: 50,
+      		noSpace: true
+    	},
+    	txtorientaapellidopat: { 
+			required: true,     
+			minlength:2,  
+			maxlength:50,
+			noSpace: true
+    	},
+    	txtorientaapellidomat: {   
+			minlength:2,  
+      		maxlength:50
+    	},
+    	txtorientatelmovil: { 
+      		required: true,       
+      		minlength: 7,
+      		maxlength: 14,
+      		number: true
+    	},
+    	txtorientacorreo: { 
+      		required: true,       
+      		email: true
+    	},
+    	selectorientagradoaca: { 
+      		required: true,
+      		minlength:1,      
+    	},
+    	selectorientapaisproc:{
+    		required: true,  
+    	},
+    	txtorientanomuni:{
+    		required: true,
+    		minlength:1
+    	},
+    	 selectorientatipoveri:{
+    	 	required:true,
+    	 	minlength:1,
+    	 },
+    	fileorientaadjdipl:{
+    		required:true,
+    		minlength:1,
+    	},
+    	/*fileorientadocadi:{
+    		required:true,
+    		minlength:1,
+    	},*/
+    	txtorientaconsulta:{
+    		required:true,
+    		minlength:1,
+    		maxlength:1000,
+    	}
+	},
+	messages:{
+	  orientalistatipodoc: { 
+	    required: "Debe seleccionar el tipo de documento",
+	    min:"Debe seleccionar el tipo de documento"
+	  },
+	   txtorientanumdocide: { 
+	    required: "Debe Ingresar el número de documento",
+	    min:"Debe Ingresar el número de documento"
+	  },
+	  txtorientanombres: { 
+	    required: "Debe ingresar sus nombres",
+	    minlength:"El campo nombre debe contener como mínimo 2 caractéres",
+	    maxlength:"El campo nombre debe contener como máximo 50 caractéres"
+	  },
+
+	  txtorientaapellidopat: { 
+	    required: "Debe ingresar el apellido paterno",
+	    minlength:"El campo apellido paterno debe contener como mínimo 2 caractéres",
+	    maxlength:"El campo apellido paterno debe contener como máximo 50 caractéres"
+	  },
+	  txtorientaapellidomat: { 
+	  //  required: "Debe ingresar el apellido materno",
+	    minlength:"El campo apellido materno debe contener como mínimo 2 caractéres",
+	    maxlength:"El campo apellido materno debe contener como máximo 50 caractéres"
+	  },
+	  txtorientatelmovil: { 
+	    required: "Debe ingresar el número de teléfono",
+	    minlength: "El número de teléfono debe contener 7 caracteres como mínimo",
+	    maxlength: "El número de Teléfono debe contener 14 caracteres como máximo",
+	    number: "Debe ingresar solo números"
+	  },
+	  txtorientacorreo: { 
+	    required: "Debe ingresar un correo electr&oacute;nico correcto",
+	    email: "Debe ingresar un correo electr&oacute;nico correcto"
+	  },
+	  selectorientagradoaca: { 
+	    required: "Debe seleccionar el Grado académico o título profesional",
+	    minlength:"Debe seleccionar el Grado académico o título profesional"
+	  },
+	   selectorientapaisproc: { 
+	    required: "Debe seleccionar el País de procedencia del diploma",
+	    minlength:"Debe seleccionar el País de procedencia del diplomas"
+	  },
+	  txtorientanomuni:{
+	  	required: "Debe ingresar el Nombre de la universidad",
+
+	  },
+	  selectorientatipoveri:{
+	  	required: "Debe seleccionar un tipo de verificación",
+	  	minlength: "Seleccionar una opción"
+	  },
+	  fileorientaadjdipl:{
+	  	required: "Debe adjuntar diploma",
+	  },
+	  /*fileorientadocadi:{
+	  	required: "Debe adjuntar documentos",
+	  },*/
+	  txtorientaconsulta:{
+	  	required: "Debe ingresar su consulta"
+	  }
+	}
+});
+$(document).on('click', '#captchaRefreshOrienta', function (e) {
+		e.preventDefault();
+		refrescarCorienta();   	
+	});
+function refrescarCorienta(){
+	captcha = $("#captchaImgOrienta");
+	var img = $('<img>');
+	var d = new Date();
+	var n = d.getMilliseconds();
+	img.attr('src',urlBase + 'simplecaptcha?date=' + n);
+	captcha.empty();
+	captcha.append(img);
+	$('#captchaorienta').val('').focus();
+};
+function openinfoPer(){
+	$('.openinfoPer').click();
+    $('#dvGuiasPerGyt').css('display','none');
+    $('#dvContFormOrienta').css('display','block');
+	$('#frmProcessOrienta').modal('hide');
+};
+
+    
+$(document).on('click', '#btnAplicativoOrie', function (e) {
+		e.preventDefault();
+		$('.openformPer').click();  	
+	});

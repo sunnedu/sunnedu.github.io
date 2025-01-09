@@ -1,0 +1,329 @@
+var formValidator = null;
+$(document).ready(function () {
+
+
+    $('#desEmailAutConfirm').on("cut copy paste", function (e) {
+        e.preventDefault();
+    });
+
+    $("#btnPrevAutoridad").on("click", function (e) {
+        e.preventDefault();
+        var txtUniveriprev = $('#txtUniveriAut').val();
+        $('#auttxtUniveriprev').val(txtUniveriprev);
+        var txtSecreveriprev = $('#txtSecreveriAut').val();
+        $('#auttxtSecreveriprev').val(txtSecreveriprev);
+        var opcion_tipoDocumentoveri = $("#tipoDocumentoveriAut option:selected").text();
+        $('#auttipoDocumentoveriprev').val(opcion_tipoDocumentoveri);
+        var codNumeDocumentoVer = $('#codNumeDocumentoVerAut').val();
+        $('#autcodNumeDocumentoVerprev').val(codNumeDocumentoVer);
+        var desApePaternoprev = $('#desApePaternoAut').val();
+        $('#autdesApePaternoprev').val(desApePaternoprev);
+        var desApeMaternoprev = $('#desApeMaternoAut').val();
+        $('#autdesApeMaternoprev').val(desApeMaternoprev);
+        var desNombreprev = $('#desNombreAut').val();
+        $('#autdesNombreprev').val(desNombreprev);
+        var desEmailprev = $('#desEmailAut').val();
+        $('#autdesEmailprev').val(desEmailprev);
+        var desTelefonoprev = $('#desTelefonoAut').val();
+        $('#autdesTelefonoprev').val(desTelefonoprev);
+        var tipoDocTramiteprev = $("#tipoDocTramiteAut option:selected").text();
+        $('#auttipoDocTramiteprev').val(tipoDocTramiteprev);
+        var datFechaExpprev = $('#datFechaExpAut').val();
+        $('#autdatFechaExpprev').val(datFechaExpprev);
+        var numeroprev = $('#numeroAut').val();
+        $('#autnumeroprev').val(numeroprev);
+        var desAsuntoprev = $('#desAsuntoAut').val();
+        $('#autdesAsuntoprev').val(desAsuntoprev);
+        var documentopdfprev = $('#documentopdfAut').val();
+        $('#autdocumentopdfprev').val(documentopdfprev.split('\\').pop());
+        var driveveriprev = $('#driveveriAut').val();
+        $('#autdriveveriprev').val(driveveriprev);
+        $('#frmPrevAutoridad').modal('show');
+    });
+
+    $("#captchaRefreshPrivAut").on("click", function (e) {
+        refrescarCaptchaAutoridad();
+    });
+
+    $("#formDatosSolicitante").on("submit", function (e) {
+        e.preventDefault();
+        form = $(this);
+        formValidator = $('#formDatosSolicitante').validate({
+            messages: {
+                txtIduniveriAut: 'Campo requerido',
+                txtUniveriAut: 'Campo requerido',
+                tipoDocumentoveriAut: 'Campo requerido',
+                txtIdSecreveriAut: 'Campo requerido',
+                codNumeDocumentoVerAut: 'Campo requerido',
+                desApePaternoAut: 'Campo requerido',
+                desNombreAut: 'Campo requerido',
+                desEmailAut: 'Campo requerido',
+                desEmailAutConfirm: 'Campo requerido',
+                desTelefonoAut: 'Campo requerido',
+                tipoDocTramiteAut: 'Campo requerido',
+                datFechaExpAut: 'Campo requerido',
+                numeroAut: 'Campo requerido',
+                desAsuntoAut: 'Campo requerido',
+                documentopdfAut: 'Archivo requerido',
+                captchaAut: '*',
+            },
+        });
+        if (!$('#formDatosSolicitante').valid()) {
+            return;
+        }
+
+        var txtIduniveri = $("#txtIduniveriAut");
+        var txtUniveri = $("#txtUniveriAut");
+        var txtSecreveri = $("#txtSecreveriAut");
+        var tipoDocumentoveri = $("#tipoDocumentoveriAut");
+        var txtIdSecreveri = $("#txtIdSecreveriAut");
+        var codNumeDocumentoVer = $("#codNumeDocumentoVerAut");
+        var desApePaterno = $("#desApePaternoAut");
+        var desApeMaterno = $("#desApeMaternoAut");
+        var desNombre = $("#desNombreAut");
+        var desEmail = $("#desEmailAut");
+        var desEmailAutConfirm = $("#desEmailAutConfirm");
+        var desTelefono = $("#desTelefonoAut");
+        var tipoDocTramite = $("#tipoDocTramiteAut");
+        var datFechaExp = $("#datFechaExpAut");
+        var numero = $("#numeroAut");
+        var desAsunto = $("#desAsuntoAut");
+        var documentopdf = $("#documentopdfAut");
+        var driveveri = $("#driveveriAut");
+        var captchaImgPriv = $("#captchaAut");
+
+        formData = new FormData();
+        formData.append("TipoDocumento", $("#tipoDocumentoveriAut option:selected").text());
+        formData.append("TipoDocumentoTramite", $("#tipoDocTramiteAut option:selected").text());
+
+        // formData.append("IdCargo", null);
+        formData.append("IdTipoDocumento", tipoDocumentoveri.val());
+        formData.append("secretario", txtSecreveri.val());
+
+        formData.append("IdAutoridad", txtIdSecreveri.val());
+        formData.append("Entidad", txtUniveri.val());
+        formData.append("Nombres", desNombre.val());
+        formData.append("IdTipoDocumentoTramite", tipoDocTramite.val());
+        // formData.append("GuidDocumento", null);
+        formData.append("IdEntidad", txtIduniveri.val());
+        formData.append("FechaExpedicion", datFechaExp.val());
+        formData.append("PrimerApellido", desApePaterno.val());
+        formData.append("Telefono", desTelefono.val());
+        formData.append("SegundoApellido", desApeMaterno.val());
+        formData.append("NumeroDocumento", codNumeDocumentoVer.val());
+        formData.append("Link", driveveri.val());
+        // formData.append("OrigenSolicitud", null);
+        // formData.append("Id", null);
+        if (documentopdf && documentopdf.length > 0 && documentopdf[0].files.length > 0) {
+            formData.append("Documento", documentopdf[0].files[0]);
+        }
+        formData.append("TituloDocumento", desAsunto.val());
+        formData.append("Numero", numero.val());
+        formData.append("CorreoElectronico", desEmail.val());
+        formData.append("CorreoElectronicoConfirm", desEmailAutConfirm.val());
+        formData.append("captchaImgPriv", captchaImgPriv.val());
+
+        habilitarControlesVeriAutoridadSol(false);
+        $.ajax({
+            url: 'autoridades/registrarEmisionConstancia',
+            type: 'POST',
+            data: formData,
+            cache: false,
+            processData: false,
+            contentType: false,
+            beforeSend: function () {
+
+            },
+            complete: function (data) {
+                refrescarCaptchaAutoridad();
+            },
+            success: function (data) {
+                refrescarCaptchaAutoridad();
+                habilitarControlesVeriAutoridadSol(true);
+                data = JSON.parse(data);
+                if (data) {
+                    if (data.success) {
+                        $('#frmAutoridadSuccess').modal('toggle');
+                        $('#frmAutoridadSuccess_body').html('<p> <b>SUNEDU</b> le agradece. Su solicitud fue enviada con éxito</p>');
+                        setTimeout(function () {
+                            location.reload();
+                        }, 2500);
+                    } else {
+                        $('#frmErrorAutoridad').modal('toggle');
+                        $('#frmErrorAutoridad_Body').html('<p>' + data.message + '</p>');
+                    }
+                }
+                else {
+                    $('#frmErrorAutoridad').modal('toggle');
+                    $('#frmErrorAutoridad_Body').html('<p>Ocurrió un error</p>');
+                }
+            }, error: function (errors) {
+                refrescarCaptchaAutoridad();
+                habilitarControlesVeriAutoridadSol(true);
+                $('#frmErrorAutoridad').modal('toggle');
+                $('#frmErrorAutoridad_Body').html('<p>Ocurrió un error.</p>');
+            }
+        });
+    });
+
+    $("#tipoDocumentoveriAut").on("change", function (e) {
+        $("#codNumeDocumentoVerAut").val('');
+        if ($(this).val() == 1) {
+            $("#codNumeDocumentoVerAut").attr('minlength', 8);
+            $("#codNumeDocumentoVerAut").attr('maxlength', 8);
+        } else {
+            $("#codNumeDocumentoVerAut").attr('minlength', 6);
+            $("#codNumeDocumentoVerAut").attr('maxlength', 15);
+        }
+    });
+
+
+    $("#documentopdfAut").on("change", function (e) {
+        var size = (this.files[0].size / 1024);
+        var type = this.files[0].type;
+        if (size > 20480) {
+            $('#frmErrorAutoridad').modal('toggle');
+            $('#frmErrorAutoridad_Body').html('<p>Peso del PDF es superior a los 20MB</p>');
+            $(this).val(null);
+        } else if (type !== 'application/pdf') {
+            $('#frmErrorAutoridad').modal('toggle');
+            $('#frmErrorAutoridad_Body').html('<p>Extensión del archivo no permitida</p>');
+            $(this).val(null);
+        }
+    });
+
+
+});
+
+function cargarTipoDocumentos(codigo) {
+    return $.ajax({
+        url: 'maestros-siu/listar',
+        type: 'GET',
+        dataType: 'json',
+        data: { codigo }
+    }).then(function (response) {
+        if (response && response.success) {
+            var $dropdown = $("#tipoDocumentoveriAut");
+            $dropdown.html('');
+            $dropdown.append($("<option />").val('').text('Seleccionar'));
+            if (response && response.data) {
+                $.each(response.data, function () {
+                    $dropdown.append($("<option />").val(this.value).text(this.text?.toUpperCase()));
+                });
+            }
+        }
+    });
+}
+
+
+function cargarTipoDocumentosTramite(codigo) {
+    return $.ajax({
+        url: 'maestros-siu/listar',
+        type: 'GET',
+        dataType: 'json',
+        data: { codigo }
+    }).then(function (response) {
+        if (response && response.success) {
+            var $dropdown = $("#tipoDocTramiteAut");
+            $dropdown.html('');
+            $dropdown.append($("<option />").val('').text('Seleccionar'));
+            if (response && response.data) {
+                $.each(response.data, function () {
+                    $dropdown.append($("<option />").val(this.value).text(this.text?.toUpperCase()));
+                });
+            }
+        }
+    });
+
+
+}
+
+function limpiarControlesAutoridad() {
+
+    $("#txtIduniveriAut").val(null);
+    $("#txtUniveriAut").val(null);
+    $("#txtIdSecreveriAut").val(null);
+    $("#txtSecreveriAut").val(null);
+    $("#tipoDocumentoveriAut").val(null);
+    $("#txtIdSecreveriAut").val(null);
+    $("#codNumeDocumentoVerAut").val(null);
+    $("#desApePaternoAut").val(null);
+    $("#desApeMaternoAut").val(null);
+    $("#desNombreAut").val(null);
+    $("#desEmailAut").val(null);
+    $("#desEmailAutConfirm").val(null);
+    $("#desTelefonoAut").val(null);
+    $("#tipoDocTramiteAut").val(null);
+    $("#datFechaExpAut").val(null);
+    $("#numeroAut").val(null);
+    $("#desAsuntoAut").val(null);
+    $("#documentopdfAut").val(null);
+    $("#driveveriAut").val(null);
+    $("#captchaAut").val(null);
+}
+function habilitarControlesVeriAutoridadSol(enabled) {
+
+    $("#txtIduniveriAut").attr("disabled", !enabled);
+    $("#txtUniveriAut").attr("disabled", !enabled);
+    $("#txtIdSecreveriAut").attr("disabled", !enabled);
+    $("#txtSecreveriAut").attr("disabled", !enabled);
+    $("#tipoDocumentoveriAut").attr("disabled", !enabled);
+    $("#txtIdSecreveriAut").attr("disabled", !enabled);
+    $("#codNumeDocumentoVerAut").attr("disabled", !enabled);
+    $("#desApePaternoAut").attr("disabled", !enabled);
+    $("#desApeMaternoAut").attr("disabled", !enabled);
+    $("#desNombreAut").attr("disabled", !enabled);
+    $("#desEmailAut").attr("disabled", !enabled);
+    $("#desTelefonoAut").attr("disabled", !enabled);
+    $("#tipoDocTramiteAut").attr("disabled", !enabled);
+    $("#datFechaExpAut").attr("disabled", !enabled);
+    $("#numeroAut").attr("disabled", !enabled);
+    $("#desAsuntoAut").attr("disabled", !enabled);
+    $("#documentopdfAut").attr("disabled", !enabled);
+    $("#driveveriAut").attr("disabled", !enabled);
+    $("#captchaImgPrivAut").attr("disabled", !enabled);
+    $("#btnEnviarAutoridad").attr("disabled", !enabled);
+    $("#desEmailAutConfirm").attr("disabled", !enabled);
+    $("#captchaRefreshPrivAut").attr("disabled", !enabled);
+    $("#btnPrevAutoridad").attr("disabled", !enabled);
+}
+
+/*function refrescarCaptchaAutoridad() {
+    //alert('refrescar');
+    captcha = $("#captchaImgPrivAuth");
+    var img = $('<img>');
+    var d = new Date();
+    var n = d.getMilliseconds();
+    img.attr('src', urlBase + 'simplecaptcha?date=' + n);
+    captcha.empty();
+    captcha.append(img);
+    $('#captchaAut').val('').focus();
+}*/
+
+
+function refrescarCaptchaAutoridad(){
+    $.ajax({
+      url: '/imageCaptcha',
+      type: 'GET',
+      beforeSend: function(){
+      $('#frmProcessEmisionCI').modal('hide');  
+    }
+    })
+    .done(function() {
+    captcha = $("#captchaImgPrivAuth");
+    var img = $('<img>');
+    var d = new Date();
+    var n = d.getMilliseconds();
+    var urlBase = window.location.protocol + "//"+window.document.domain;
+    img.attr('src', urlBase+'/imageCaptcha');
+    captcha.empty();
+      captcha.append(img);
+      $('#captchaAut').val('').focus();
+    })
+    .fail(function() {
+    })
+    .always(function() {
+    });
+
+}
+setInterval("refrescarCaptchaAutoridad()",6*60*1000);

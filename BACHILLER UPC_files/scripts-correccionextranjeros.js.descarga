@@ -1,0 +1,232 @@
+$(document).on('click', '#btnSiguieMensajeDatosSolicitanteExtranjero', function() {  
+  $.ajax({
+    url: 'ListatipoDocumentoCorreDatos',
+    type: 'GET',
+    dataType: 'json',        
+  })
+  .done(function(data) {     
+    $('#ListatipoDocumentoCorreDatosExtranjeros').empty();
+     var $select = $('#ListatipoDocumentoCorreDatosExtranjeros');
+      $('#ListatipoDocumentoCorreDatosExtranjeros').append('<option value="0" selected>'+"Seleccionar"+'</option>');
+      $.each(data, function(i, val){           
+          $('#ListatipoDocumentoCorreDatosExtranjeros').append('<option value="'+val.IDX_TIPDOC+'">'+val.NOMBRE_TIPO_DOCUMENTO+'</option>'); //ABREVIATURA
+      });          
+  })
+  .fail(function(data) {
+   // console.log(data);    
+  })
+  .always(function(data) {    
+   // console.log(data);
+  });
+});
+
+$(document).on('change', '#ListatipoDocumentoCorreDatosExtranjeros', function() {
+  var idDoc = $('#ListatipoDocumentoCorreDatosExtranjeros').val();
+ // console.log(idDoc);
+  if(idDoc == 1){
+    $('#Soli_NumDocIdeExtranjero').attr("minlength", "8");
+    $('#Soli_NumDocIdeExtranjero').attr("maxlength", "8");
+    $('#Soli_NumDocIdeExtranjero').addClass('solonumeros');
+
+
+    $('#btnDatosSoli').attr('disabled',false);
+    $('#Soli_NumDocIdeExtranjero').val('');   
+    $("#Soli_NumDocIdeExtranjero").attr('maxlength','8');
+    /*$('#Soli_ApePaternoExtranjero').attr('readonly',true);
+    $('#Soli_ApePaternoExtranjero').attr('disabled',true);*/
+    $('#Soli_ApePaternoExtranjero').val('');
+   /* $('#Soli_ApeMaternoExtranjero').attr('readonly',true);
+    $('#Soli_ApeMaternoExtranjero').attr('disabled',true);*/
+    $('#Soli_ApeMaternoExtranjero').val('');
+    /*$('#Soli_NombreExtranjero').attr('readonly',true);
+    $('#Soli_NombreExtranjero').attr('disabled',true);*/
+    $('#Soli_NombreExtranjero').val('');
+  }else{
+    $('#Soli_NumDocIdeExtranjero').attr("minlength", "6");
+    $('#Soli_NumDocIdeExtranjero').attr("maxlength", "15");
+    $('#Soli_NumDocIdeExtranjero').removeClass('solonumeros');
+
+    $('#btnDatosSoli').attr('disabled',true);
+   /* $('#Soli_ApePaternoExtranjero').attr('readonly',false);
+    $('#Soli_ApePaternoExtranjero').attr('disabled',false);*/
+    $('#Soli_ApePaternoExtranjero').val('');
+    /*$('#Soli_ApeMaternoExtranjero').attr('readonly',false);
+    $('#Soli_ApeMaternoExtranjero').attr('disabled',false);*/
+    $('#Soli_ApeMaternoExtranjero').val('');
+    /*$('#Soli_NombreExtranjero').attr('readonly',false);
+    $('#Soli_NombreExtranjero').attr('disabled',false);*/
+    $('#Soli_NombreExtranjero').val('');
+    $('#Soli_NumDocIdeExtranjero').val('');
+    
+  }
+});
+/*  */
+$(document).on('click', '#btnsiguiedatossolicitanteExtranjero', function() {  
+  var filecartapoder = $('#filecartapoderExtranjero').val();
+  if (filecartapoder.length > 1){
+    var extension = (filecartapoder.substring(filecartapoder.lastIndexOf("."))).toLowerCase(); 
+    var input = document.getElementById('filecartapoderExtranjero');
+    var file = input.files[0];
+    var sizeByte = file.size;
+      var siezekiloByte = parseInt(sizeByte / 1024);    
+    if(siezekiloByte > 8192 || extension != '.pdf'){      
+      $('#frmMensajesCorreccionesExtranjero').modal('show');
+      $('#frmError_BodyDatosExtranjero').html('El peso del archivo no debe tener más de 8mb y el archivo tiene que tener formato .pdf');
+    }else{
+      var a= validarDatosSolicitanteExtranjero();     
+      if(a == true){
+        $("#correccion_datos").tab('show');
+        MostraCorreccionDatosExtranjero();    
+      } 
+    }
+  }else{
+    var a= validarDatosSolicitanteExtranjero();   
+    if(a == true){
+      $("#correccion_datos").tab('show');
+      MostraCorreccionDatosExtranjero();    
+    }
+  } 
+})  
+
+function validarDatosSolicitanteExtranjero(){
+  var ListatipoDocumentoCorreDatos = $('#ListatipoDocumentoCorreDatosExtranjeros').val();
+  var Soli_NumDocIde = $('#Soli_NumDocIdeExtranjero').val();
+  var Soli_ApePaterno = $('#Soli_ApePaternoExtranjero').val();
+  var Soli_ApeMaterno = $('#Soli_ApeMaternoExtranjero').val();
+  var Soli_Nombre = $('#Soli_NombreExtranjero').val();
+  var Soli_Email = $('#Soli_EmailExtranjero').val();
+  
+  if(ListatipoDocumentoCorreDatos == '0' || Soli_NumDocIde.length < 1 || Soli_Nombre.length < 1 || Soli_Email.length < 1)
+  {
+    $('#frmMensajesCorreccionesExtranjero').modal('show');
+    $('#frmError_BodyDatosExtranjero').html('Ingresar todos los campos obligatorios(*).');
+    return false;
+  }else if(Soli_ApePaterno.length < 1 && Soli_ApeMaterno.length < 1){
+    $('#frmMensajesCorreccionesExtranjero').modal('show');
+    $('#frmError_BodyDatosExtranjero').html('Ingresar Apellido.');
+    return false;   
+  }
+  else{
+    if(Soli_Email.indexOf('@', 0) == -1 || Soli_Email.indexOf('.', 0) == -1) {
+            $('#frmMensajesCorreccionesExtranjero').modal('show');
+        $('#frmError_BodyDatosExtranjero').html('El correo electrónico introducido no es correcto.');
+            return false;
+        }
+    return true;
+  }
+}
+
+
+function MostraCorreccionDatosExtranjero(){
+    id =$('#btnsiguiedatossolicitanteExtranjero').attr('data-ide'); 
+    dni = '';//$(this).data('datadni');
+    window.scrollTo(0,0);
+    
+    $.ajax({
+      url: 'agregarlocalizaciondetalle',
+      type: 'POST',
+      dataType: 'json',
+      context : this,
+      data: {dni: dni,id_grado:id},
+    })
+    .done(function(data) {
+      $('html,body').animate({scrollTop: 0},'fast');       
+      id = $('#btnsiguiedatossolicitante').attr('data-ide');
+      opcion = $(this).data('opcion');  
+      proc=$(this).data('proc');
+      
+      codigo = '';
+      opcion = $('#btnsiguiedatossolicitante').data('opcione');
+      proc =  $('#btnsiguiedatossolicitante').data('proce');//'N';
+      ca = 'N';
+      tk = $('#token').val();     
+      $.ajax({
+        url: 'consultaDatos',
+        type: 'POST',
+        dataType: 'json',
+        context : this,       
+        data: {id: id, codigo:codigo, opcion:opcion, proc:proc, ca:'N', _token:tk},
+      })
+      .done(function(data) {        
+        var trHTML = '';
+        //$('#detalleDatos').html(trHTML);
+        $.each($.parseJSON(data), function(i, item) {
+          if (proc == 'E'){
+            var d = new Date(item.RESO_FEC);
+            var n = d.toLocaleDateString();
+            trHTML += '<tr><td><strong>Tipo de documento de identidad:</strong> </td><td>'+item.DOCU_TIP + '</td></tr><tr><td><strong>Número de documento:</strong></td><td>' + item.DOCU_NUM + '</td></tr><tr><td><strong>Apellidos:</strong> </td><td>' + item.APEPAT + ' ' + item.APEMAT + '</td></tr><tr><td><strong>Nombres:</strong> </td><td> ' + item.NOMBRE + '</td></tr><tr><td><strong>Grado/Título:</strong></td><td> ' + item.GRAD_TITU + '</td></tr><tr><td><strong>Especialidad/Mención:</strong></td><td> ' + item.ESPECIALIDAD + '</td></tr><tr><td><strong>Tipo de Graduación:</strong></td><td>Reconocimiento</td></tr><tr><td><strong>Número de Resolución:</strong></td><td> ' + item.RESO_NUM + '</td></tr><tr><td><strong>Fecha de Resolución:</strong></td><td>'+n+'</td></tr><tr><td><strong>Nombre de Institución:</strong></td><td> ' + item.U_NOM + '</td></tr><tr><td><strong>País:</strong></td><td>'+item.PAIS+'</td></tr>';
+          } else if (proc == 'R'){
+            var d = new Date(item.RESO_FEC);
+            var n = d.toLocaleDateString();
+            trHTML += '<tr><td><strong>Tipo de documento de identidad:</strong> </td><td>'+item.DOCU_TIP + '</td></tr><tr><td><strong>Número de documento:</strong></td><td>' + item.DOCU_NUM + '</td></tr><tr><td><strong>Apellidos:</strong> </td><td>' + item.APEPAT + ' ' + item.APEMAT + '</td></tr><tr><td><strong>Nombres:</strong> </td><td> ' + item.NOMBRE + '</td></tr><tr><td><strong>Grado/Título:</strong></td><td> ' + item.GRAD_TITU + '</td></tr><tr><td><strong>Especialidad/Mención:</strong></td><td> ' + item.ESPECIALIDAD + '</td></tr><tr><td><strong>Tipo de Graduación:</strong></td><td>Reconocimiento</td></tr><tr><td><strong>Número de Resolución:</strong></td><td> ' + item.RESO_NUM + '</td></tr><tr><td><strong>Fecha de Resolución:</strong></td><td>'+n+'</td></tr><tr><td><strong>Nombre de Institución:</strong></td><td> ' + item.U_NOM + '</td></tr><tr><td><strong>País:</strong></td><td>'+item.PAIS+'</td></tr>';
+          } else if (proc == 'N'){
+            $('#datosinstitu').val(item.U_NOM);
+            $('#datosinstitu').attr('data-insti', item.U_NOM);
+            $('#valorinstitucion').val(item.U_NOM);
+            $('#valorgradotitulo').val(item.GRAD_TITU);
+            $('#tipdoc').attr('data-valueselect', item.DOCU_TIP);
+            $('#btncancelarTipDoc').attr('data-valor',item.TIPO_DOC);
+            $('#txtNumDoc').val(item.DOCU_NUM);
+            $('#btncancelarNumDoc').attr('data-valor',item.DOCU_NUM);
+            $('#txtApePat').val(item.APEPAT);
+            $('#btncancelarApePat').attr('data-valor',item.APEPAT);
+            $('#txtApeMat').val(item.APEMAT);
+            $('#btncancelarApeMat').attr('data-valor',item.APEMAT);
+            $('#txtNombre').val(item.NOMBRE);
+            $('#btncancelarNombre').attr('data-valor',item.NOMBRE);
+            //$(":file").filestyle();           
+          /*  trHTML += '<tr><td><strong>Nombre de Institución:</strong></td><td data-insti="' + item.U_NOM + '"> ' + item.U_NOM + '</td></tr>';
+            trHTML += '<tr><td><strong>Grado/Título:</strong></td><td>' + item.GRAD_TITU + '</td></tr>';
+            trHTML += '<tr><td><strong>Tipo de documento de identidad:</strong> </td><td><select class="form-control" id="tipdoc" name="tipdoc" data-valueselect="'+item.DOCU_TIP+'" disabled><option value="DNI">DNI</option><option value="PASAPORTE">PASAPORTE</option><option value="CE">CARNE DE EXTRANJERIA</option><option value="PTP">PERMISO TEMPORAL DE PERMANENCIA</option></select></td><td><span class="glyphicon glyphicon-edit" data-toggle="tooltip" data-placement="top" title="Editar" id="btneditarTipDoc" style="cursor:pointer"></span> <span class="fa fa-mail-reply" data-toggle="tooltip" data-placement="top" title="Cancelar" id="btncancelarTipDoc" data-valor="'+ item.TIPO_DOC +'" style="cursor:pointer"></span></td></tr>';
+            trHTML += '<tr><td><strong>Número de documento:</strong></td><td><input type="text" class="form-control" value="'+ item.DOCU_NUM +'" disabled id="txtNumDoc" minlength="6" maxlength="20"></td><td><span class="glyphicon glyphicon-edit" data-toggle="tooltip" data-placement="top" title="Editar" id="btneditarNumDoc" style="cursor:pointer"></span> <span class="fa fa-mail-reply" data-toggle="tooltip" data-placement="top" title="Cancelar" id="btncancelarNumDoc" data-valor="'+ item.DOCU_NUM +'" style="cursor:pointer"></span></td></tr>';
+            trHTML += '<tr><td><strong>Apellido paterno:</strong> </td><td><input type="text" class="form-control" value="'+ item.APEPAT +'" disabled id="txtApePat" minlength="2" maxlength="30"></td><td><span class="glyphicon glyphicon-edit" data-toggle="tooltip" data-placement="top" title="Editar" id="btneditarApePat" style="cursor:pointer"></span> <span class="fa fa-mail-reply" data-toggle="tooltip" data-placement="top" title="Cancelar" id="btncancelarApePat" data-valor="'+ item.APEPAT +'" style="cursor:pointer"></span></td></tr>';
+            trHTML += '<tr><td><strong>Apellido materno:</strong> </td><td><input type="text" class="form-control" value="'+ item.APEMAT +'" disabled id="txtApeMat" minlength="2" maxlength="30"></td><td><span class="glyphicon glyphicon-edit" data-toggle="tooltip" data-placement="top" title="Editar" id="btneditarApeMat" style="cursor:pointer"></span> <span class="fa fa-mail-reply" data-toggle="tooltip" data-placement="top" title="Cancelar" id="btncancelarApeMat" data-valor="'+ item.APEMAT +'" style="cursor:pointer"></span></td></tr>';
+            trHTML += '<tr><td><strong>Nombres:</strong> </td><td><input type="text" class="form-control" value="'+ item.NOMBRE +'"  disabled id="txtNombre" minlength="2" maxlength="30"></td><td><span class="glyphicon glyphicon-edit" data-toggle="tooltip" data-placement="top" title="Editar" id="btneditarNombre" style="cursor:pointer"></span> <span class="fa fa-mail-reply" data-toggle="tooltip" data-placement="top" title="Cancelar" id="btncancelarNombre" data-valor="'+ item.NOMBRE +'" style="cursor:pointer"></span></td></tr>';
+            trHTML += '<tr><td><strong>Adjuntar diploma (*):</strong> </td><td><input type="file" class="filestyle" id="diplomapdf" name="diplomapdf" accept=".pdf" /><label id="lblNomFile1" style="display: none; color: #006699;"></label></td></tr>';
+            trHTML += '<tr><td><strong>Adjuntar documento de identidad (*):</strong> </td><td><input type="file" class="filestyle form-control docidenpdf col-sm-12" id="docidenpdf" name="docidenpdf" accept=".pdf"><label id="lblNomFile1" style="display: none; color: #006699;"></label></td></tr>';            
+        */  }
+        });
+        
+  $('#detalleDatos').append(trHTML);
+  var valueselect = $('#tipdoc').data('valueselect');
+  $('#tipdoc').val(valueselect);  
+  $('#frmProcess').modal('hide');
+  $("body").addClass("modal-open");
+  })
+  .fail(function() {
+  //  console.log("error");
+    mensaje();
+            /*$('#frmError').modal('toggle');
+            $('#frmError_Body').html('<p>En estos momentos no se puede terminar la operación, por favor inténtelo nuevamente en unos minutos.</p>')*/
+          });
+ // console.log("success");
+  })
+  .fail(function() {
+    //console.log("error");
+  }); 
+}
+
+
+
+
+$("body").on('keydown','.solonumeros',function(event) {
+  if(event.shiftKey)
+  {
+    event.preventDefault();
+  }
+
+  if (event.keyCode == 46 || event.keyCode == 8)    {
+  }
+  else {
+  if (event.keyCode < 95) {
+    if (event.keyCode < 48 || event.keyCode > 57) {
+      event.preventDefault();
+    }
+  } 
+  else {
+    if (event.keyCode < 96 || event.keyCode > 105) {
+      event.preventDefault();
+    }
+  }
+}
+});

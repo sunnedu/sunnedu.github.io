@@ -1,0 +1,518 @@
+
+$(document).ready(function(){
+  $("#tabemicionci").removeAttr("href");
+
+  limpiarForm();
+ 
+    $('#cbocidepartamento,#cbociprovincia,#cbocidistrito').select2();
+
+    $.ajax({
+        url: 'departamento',
+        type: 'GET',
+        dataType: 'json',       
+      })
+      .done(function(data) {
+        $.each(data, function(i, item) {
+        $('#cbocidepartamento').empty();                    
+        $('#cbocidepartamento').append(
+                  '<option value="0" disabled="" selected>Seleccionar departamento</option>'
+              );      
+          $.each(data, function(i, item) {
+            $('#cbocidepartamento').append(
+              '<option value="' + item.IDX_DEPARTAMENTO + '">'+ item.DSC_DEPARTAMENTO +'</option>'
+            );
+          });
+        });
+      })
+      .fail(function() {
+        //console.log("error");
+      })
+      .always(function() {
+       // console.log("complete");
+      });      
+});
+/* tipo de documento */
+$("#citipdoc").on('change',function(event){
+    var valor = $(this).val();
+    $('#cbocidepartamento').val('0');
+    $('#cbocidepartamento').select2().trigger('change');
+    $('#cbociprovincia').val('0');
+    $('#cbociprovincia').select2().trigger('change');
+    $('#cbocidistrito').val('0');
+    $('#cbocidistrito').select2().trigger('change');
+  if (valor == 'DNI') {   
+    $('#txtcinumdocide').val('');        
+    $('#txtcinumdocide').attr('minlength', 8);
+    $('#txtcinumdocide').attr('maxlength', 8);  
+    $("#txtcinumdocide").removeAttr('disabled');
+    $("#txtcifecemision").removeAttr('disabled');
+    $("#txtcifecnacimiento").removeAttr('disabled');   
+    $('#txtcinumdocide').addClass('solonumeros');   
+    limpiarForm();
+    $("#reniec").css("display", "");
+     /*$('#reniec').prop('hidden',false);
+    $('#reniec').removeClass("hidden");*/
+  }else{
+    $('#txtcinumdocide').val('');
+    $("#reniec").css("display", "none");
+    $('#txtcinumdocide').attr('minlength', 6);
+    $('#txtcinumdocide').attr('maxlength', 15);
+    $("#txtcinumdocide").removeAttr('disabled');
+    $('#txtcinombres').removeAttr('disabled');
+    $('#txtciapellidopat').removeAttr('disabled');
+    $('#txtciapellidomat').removeAttr('disabled');
+     $('#txtcinumdocide').removeClass('solonumeros');
+    limpiarForm();    
+  }
+});
+$('#reniec').click(function(event) {
+  var dni = $('#txtcinumdocide').val();
+  var tk = $('#token').val();
+  if (dni.length == 8) {
+    $.ajax({
+      url: 'buscarnumdoc',
+      type: 'POST',
+      dataType: 'json',
+      data: {txtnumdocumento: dni,_token:tk},
+    })
+    .done(function(data) {
+      var codigo = data['respuesta'].cGenerico;
+      if(codigo == '00000')
+      {
+        var output = data['outPut'].coResultado;
+        if (output == '0000') {
+          var nombres = data['outPut'].datosPersona['prenombres'];
+          var apellidoPaterno = data['outPut'].datosPersona['apPrimer'];;
+          var apellidoMaterno = data['outPut'].datosPersona['apSegundo'];; 
+          var direccion = data['outPut'].datosPersona['direccion'];;              
+          limpiarForm();        
+          $("#txtrazonsocial").val(''); 
+          $("#txtrazonsocial").attr('disabled','disabled'); 
+          $("#txtcinombres").attr('disabled','disabled');
+          $('#txtcinombres').val(nombres);
+          $("#txtciapellidopat").attr('disabled','disabled');
+          $('#txtciapellidopat').val(apellidoPaterno);
+          $("#txtciapellidomat").attr('disabled','disabled');
+          $('#txtciapellidomat').val(apellidoMaterno);   
+          //$('#txtcidomicilio').val(direccion);        
+        }else{
+          $('#frmProcess').modal('hide');
+              limpiarForm();
+              $('#frmError_Body').html('No se obtuvo información para el número de DNI ' + dni + ' .Por favor, digite los datos solicitados');
+              $('#frmError').modal('show'); 
+        }
+      }
+        else if(codigo == 'errortoken'){
+          $('#frmProcess').modal('hide');
+          limpiarForm();
+          $('#frmError_Body').html('<p>En estos momentos no se puede terminar la operación, por favor inténtelo nuevamente en unos minutos.</p>');
+          $('#frmError').modal('show');
+       }
+          else
+        {  
+            $('#frmProcess').modal('hide');
+            limpiarForm();
+            $('#frmError_Body').html('No se obtuvo información para el número de DNI ' + dni + ' .Por favor, digite los datos solicitados');
+            $('#frmError').modal('show'); 
+        }   
+    })
+    .fail(function() {
+      //console.log("error");
+    })
+    .always(function() {
+      //console.log("complete");
+    });
+  }else{
+    $('#frmError').modal('show');
+    $('#frmError_Body').html('Ingresar el número de documento de identidad.');
+  }
+});
+/* provincia */
+$('#cbocidepartamento').change(function(){
+  $('#cbocidepartamento-error').removeClass('my-error-class');
+  $('#cbocidepartamento-error').css('display', 'none');
+  var valor = $(this).val();
+  //$('#cbocidistrito').select2(0).trigger('change');
+  $.ajax({
+    url: 'provincia/'+valor,
+    type: 'GET',
+    dataType: 'json',
+  })
+  .done(function(data) {
+
+    $.each(data, function(i, item) {
+      $('#cbociprovincia').empty();
+      $('#cbociprovincia').append(
+            '<option value="0" disabled="" selected>Seleccionar provincia</option>'
+        );      
+      $.each(data, function(i, item) {
+        $('#cbociprovincia').append(
+          '<option  value="' + item.IDX_PROVINCIA + '">'+ item.DSC_PROVINCIA +'</option>'
+        );
+      });
+    });
+
+  })
+  .fail(function() {
+    //console.log("error");
+  })
+  .always(function() {
+    //console.log("complete");
+  });
+});
+/* distrito */
+$('#cbociprovincia').change(function(){  
+  $('#cbociprovincia-error').removeClass('my-error-class');
+   $('#cbociprovincia-error').css('display', 'none');
+    var prov = $('#cbocidepartamento').val();
+    var valor = $(this).val();
+    $.ajax({
+        url: '/distrito/'+prov+'/'+valor,
+        type: 'GET',
+        dataType: 'json',       
+      })
+      .done(function(data) {
+
+        $.each(data, function(i, item) {
+          $('#cbocidistrito').empty();
+          $('#cbocidistrito').append(
+                '<option value="0" disabled="" selected>Seleccionar distrito</option>'
+            );      
+          $.each(data, function(i, item) {
+            $('#cbocidistrito').append(
+              '<option value="' + item.IDX_DISTRITO + '">'+ item.DSC_DISTRITO +'</option>'
+            );
+          });
+        });
+
+      })
+      .fail(function() {
+        //console.log("error");
+      })
+      .always(function() {
+        //console.log("complete");
+      });
+});
+$('#cbocidistrito').change(function(){
+  $('#cbocidistrito-error').removeClass('my-error-class');
+  $('#cbocidistrito-error').css('display', 'none');
+});
+
+/* validacion de formulario */
+$("#solicitanteciForm").validate({
+  errorClass: "my-error-class",
+  validClass: "my-valid-class",
+
+
+
+  rules: {
+    citipdoc: { 
+      required: true,
+      //min: 1
+    },
+    
+     txtcinumdocide: { 
+      required: true,
+      min: 2
+    },
+    txtcinombres: { 
+      required: true,
+      minlength:2,       
+      maxlength: 50,
+      noSpace: true
+    },
+    txtciapellidopat: { 
+      required: true,     
+      minlength:2,  
+      maxlength:50,
+      noSpace: true
+    },
+     txtciapellidomat: { 
+      required: true,     
+      minlength:2,  
+      maxlength:50,
+      noSpace: true
+    },
+    cbocidepartamento : { 
+      required: true,
+      //min: 2
+    },
+    cbociprovincia  : { 
+      required: true,
+    //  min: 4
+    },
+    cbocidistrito  : { 
+      required: true,
+   //   min: 6
+    },
+    txtcidomicilio: { 
+      required: true, 
+      minlength:4,
+      maxlength:90      
+    },
+    txtcitelefono: { 
+      required: true,       
+      minlength: 7,
+      maxlength: 14,
+      number: true
+    },
+
+    txtcicorreo: { 
+      required: true,       
+      email: true
+    },
+ 
+},
+
+messages:{
+  citipdoc: { 
+    required: "Debe seleccionar el tipo de documento",
+    min:"Debe seleccionar el tipo de documento"
+  },
+   txtcinumdocide: { 
+    required: "Debe Ingresar el número de documento",
+    min:"Debe Ingresar el número de documento"
+  },
+  txtcinombres: { 
+    required: "Debe ingresar sus nombres",
+    minlength:"El campo nombre debe contener como mínimo 2 caractéres",
+    maxlength:"El campo nombre debe contener como máximo 50 caractéres"
+  },
+
+  txtciapellidopat: { 
+    required: "Debe ingresar el apellido paterno",
+    minlength:"El campo apellido paterno debe contener como mínimo 2 caractéres",
+    maxlength:"El campo apellido paterno debe contener como máximo 50 caractéres"
+  },
+  txtciapellidomat: { 
+    required: "Debe ingresar el apellido materno",
+    minlength:"El campo apellido materno debe contener como mínimo 2 caractéres",
+    maxlength:"El campo apellido materno debe contener como máximo 50 caractéres"
+  },
+  cbocidepartamento: { 
+    required: "Debe seleccionar un departamento",
+    min:"Debe seleccionar un departamento",
+  //  validaSelect: "SELECCIONE UNA OPCIÓN deaaa"
+  },
+  cbociprovincia: { 
+    required: "Debe seleccionar una provincia",
+    min:"Debe seleccionar una provincia"     
+  },
+  cbocidistrito: { 
+    required: "Debe seleccionar un distrito ",
+    min:"Debe seleccionar un distrito"      
+  },
+  txtcidomicilio: { 
+    required: "Ingresar la dirección",
+    maxlength: "La dirección legal, debe tener como máximo 90 caracteres",
+  },
+  txtcitelefono: { 
+    required: "Debe ingresar el número de teléfono",
+    minlength: "El número de teléfono debe contener 7 caracteres como mínimo",
+    maxlength: "El número de Teléfono debe contener 14 caracteres como máximo",
+    number: "Debe ingresar solo números"
+  },
+  txtcicorreo: { 
+    required: "Debe ingresar un correo electr&oacute;nico correcto",
+    email: "Debe ingresar un correo electr&oacute;nico correcto"
+  },
+}
+});
+
+$('#citipdoc').on('change', function() {
+  $('.openformcons').click();
+    jQuery.validator.addMethod("noSpace", function(value, element) { 
+      return value == '' || value.trim().length != 0;  
+    }, "Eliminar los espacios al inicio.");
+
+    $('#txtcinumdocide').keypress(function( e ) {
+       if(e.which === 32) 
+         return false;
+    });
+    $.validator.addMethod("alphanumeric", function(value, element) {
+    //test user value with the regex
+    return this.optional(element) || /^[\w ]+$/i.test(value);
+    }, "Ingresar letras y/o números");
+
+    $('#txtcinumdocide').bind('cut copy paste', function (e) {
+        e.preventDefault();
+    });
+
+    if ($("#citipdoc").val()=="DNI"){
+      $('#txtcinumdocide').rules('remove'); 
+      
+      $('#txtcinumdocide').rules('add', {
+        required:true,
+        number: true,
+        minlength:8,
+        maxlength:8,
+        messages: {
+          required: "Debe ingresar el número de documento",
+          minlength:"El campo número de documento debe contener 8 dígitos",
+          number:"Debe ingresar sólo números"
+        }
+      });
+      $('input[name="txtcinombres"]').rules('add', {
+        required:true,
+        minlength:2,
+        maxlength:50,
+        messages: {
+          required: "Debe ingresar su nombre",
+          minlength:"Ingresar al menos 2 caractéres"
+        },
+        noSpace: true
+      });
+
+      $('input[name="txtciapellidopat"]').rules('add', {
+        required:true,
+        minlength:2,
+        maxlength:50,
+        messages: {
+          required: "Debe ingresar su apellido paterno",
+          maxlength:"Ingresar al menos 2 caractéres"
+        },
+        noSpace: true
+      });
+
+      $('input[name="txtciapellidomat"]').rules('add', {
+        required:true,
+        maxlength:50,
+        messages: {
+          required: "Debe ingresar su apellido materno",
+          maxlength:"Ingresar al menos 2 caractéres"
+        },
+        noSpace: true
+      });
+      
+      $('input[name="txtcidomicilio"]').rules('add', {
+        required:true,
+        maxlength:90,
+        minlength:4,
+        messages: {
+          required: "Dirección Av./Ca./Jr./Psj.",
+          minlength:"Ingresar al menos 4 caractéres",
+          maxlength:"Ingresar un máximo 90 caractéres"
+        },
+        noSpace: true
+      });
+
+    }else{
+      $('#txtcinumdocide').rules('remove'); 
+      
+      $('#txtcinumdocide').rules('add', {
+        required:true,
+        number: false,
+        minlength:6,
+        maxlength:14,
+        messages: {
+          required: "Debe ingresar el número de documento",
+          minlength:"El campo número de documento debe contener mínimo 6 dígitos",
+          maxlength:"El campo número de documento debe contener máximo 14 dígitos",
+          //number:"Debe ingresar sólo números"
+        },
+        alphanumeric:true
+      });     
+    
+      $('input[name="txtcinombres"]').rules('add', {
+        required:true,
+        minlength:2,
+        maxlength:50,
+        messages: {
+          required: "Debe ingresar su nombre",
+          minlength:"Ingresar al menos 2 caractéres"
+        },
+        noSpace: true
+      });
+
+      $('input[name="txtciapellidopat"]').rules('add', {
+        required:true,
+        minlength:2,
+        maxlength:50,
+        messages: {
+          required: "Debe ingresar su apellido paterno",
+          minlength:"Ingresar al menos 2 caractéres",
+          maxlength:"El campo apellido paterno debe contener 50 caractéres como máximo"
+        },
+        noSpace: true
+      });
+
+      $('input[name="txtciapellidomat"]').rules('add', {
+        required:false,
+        maxlength:50,
+        messages: {
+          required: "Debe ingresar su apellido materno",
+          minlength:"Ingresar al menos 2 caractéres",
+          maxlength:"El campo apellido materno debe contener 50 caractéres como máximo"
+        },
+        noSpace: true
+      });
+      $('input[name="txtcidomicilio"]').rules('add', {
+        required:true,
+        maxlength:50,
+        minlength:4,
+        messages: {
+          required: "Ingresar la Dirección Av./Ca./Jr./Psj.",
+          minlength:"Ingresar al menos 4 caractéres",
+          maxlength:"Ingresar al menos 50 caractéres"
+        },
+        noSpace: true
+      });
+
+    }
+});
+$('#btncisiguiente').on('click', function() {
+  if ($('#solicitanteciForm').valid()) {
+
+    if (document.getElementById("txtcinumdocide").value.indexOf(" ") !== -1) {       
+        $('#frmError').modal('show');
+        $('#frmError_Body').html('El número de documento no puede contener espacios en blanco.');
+    }
+    else{
+      $('#edit_tab_1ci').attr('disabled','disabled');
+      $('#edit_tab_1ci').prop('onclick', null);
+      guardarDatosSolicitante();    
+      $("#tabdatossolici").removeAttr("href");
+      $("#datossolicici").removeAttr("href");
+      $('#datossolicici').attr('disabled','disabled');
+      $('#tabemicionci').attr('href', '#edit_tab_2ci');      
+    }
+
+  }else{
+    $('#frmError').modal('show');
+    $('#frmError_Body').html('Ingresar o seleccionar todos los campos obligatorios. <span style="color:red">*</span>');
+  }
+});
+
+$("body").on('keydown','.solonumeros',function(event) {
+  if(event.shiftKey)
+  {
+    event.preventDefault();
+  }
+
+  if (event.keyCode == 46 || event.keyCode == 8)    {
+  }
+  else {
+    if (event.keyCode < 95) {
+      if (event.keyCode < 48 || event.keyCode > 57) {
+        event.preventDefault();
+      }
+    } 
+    else {
+      if (event.keyCode < 96 || event.keyCode > 105) {
+        event.preventDefault();
+      }
+    }
+  }
+});
+function limpiarForm(){
+  $('#txtcinombres').val('');
+  $('#txtciapellidopat').val('');
+  $('#txtciapellidomat').val('');
+  $('#cbocidepartamento').select2().trigger('change');
+  $('#cbociprovincia').select2(0).trigger('change');
+  $('#cbocidistrito').select2(0).trigger('change');
+  $('#txtcidomicilio').val('');
+  $('#txtreferencia').val('');
+  $('#txtcitelefono').val('');
+  $('#txtcicorreo').val('');
+}

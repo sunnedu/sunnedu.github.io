@@ -1,0 +1,59 @@
+function noDrop(evt) {
+    evt.preventDefault ? evt.preventDefault() : evt.returnValue = false;
+}
+
+$(document).ready(function () {
+
+    $(".verifirma").on('click', function () {
+        $($("#ifrmShowFormVeriFirma li")["0"]).addClass("active");
+        $($("#ifrmShowFormVeriFirma li")["1"]).removeClass("active");
+        $($("#ifrmShowFormVeriFirma .tab-pane")["0"]).addClass("active");
+        $($("#ifrmShowFormVeriFirma .tab-pane")["1"]).removeClass("active");
+        if (formValidator) {
+            formValidator.resetForm();
+        }
+        limpiarControlesAutoridad();
+        $.when(cargarTipoDocumentos("ID_TBL_TIPO_DOCUMENTO_IDENTIDAD"), cargarTipoDocumentosTramite("ID_TBL_TIPO_DOCUMENTO_TRAMITE")).done(function (result1) {
+            habilitarControlesVeriAutoridadSol(true);
+        }).fail(function (err) {
+            habilitarControlesVeriAutoridadSol(true);
+        });
+    });
+
+
+    $("#verifica_inscripcion").on('click', function () {
+        if ($("#txtIduniveriAut").val() !== null && $("#txtIduniveriAut").val() !== '') {
+            $('#frmErrorAutoridadConfirm_Body').html('¿Esta seguro que desear regresar a Verifica inscripción? </br> si continua perdera la información ingresada en este formulario.');
+            $('#frmErrorAutoridadConfirm').modal('show');
+        }
+    });
+
+    $('#datFechaExpAut').datepicker({
+        format: "dd/mm/yyyy",
+        autoclose: true,
+        todayHighlight: true,
+        container: '#modalVeriFirma modal-body'
+    });
+
+
+    $("#btnAceptarDeshacerAutoridad").on("click", function (e) {
+        e.preventDefault();
+        $("#txtIduniveriAut").val(null);
+        $("#txtUniveriAut").val(null);
+        $("#txtIdSecreveriAut").val(null);
+        $("#txtSecreveriAut").val(null);
+        limpiarControlesAutoridad();
+        $($("#ifrmShowFormVeriFirma li")["0"]).addClass("active");
+        $($("#ifrmShowFormVeriFirma li")["1"]).removeClass("active");
+        $($("#ifrmShowFormVeriFirma .tab-pane")["0"]).addClass("active");
+        $($("#ifrmShowFormVeriFirma .tab-pane")["1"]).removeClass("active");
+        if (formValidator) {
+            formValidator.resetForm();
+        }
+    });
+});
+
+function cerrarAlertaAutoridad(e) {
+    e.preventDefault();
+    $('#frmErrorAutoridad').css('display', 'none');
+}

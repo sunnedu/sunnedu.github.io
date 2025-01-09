@@ -1,0 +1,276 @@
+/* encuestas siu */
+function encuestasiu(){
+$.ajax({
+ 	url: '/tituloencuesta',
+ 	type: 'POST',
+ 	dataType: 'json',
+ 	data: { idservicio :3}
+})
+ .done(function(data) {	
+	$.each( data, function( i, itemE ){
+	 	if( i === 0){
+			$('#titulo_encuestaSiu').html(itemE.TEXT_INTRO);
+	 	}
+	});	
+ 	
+ 	$('#tituloencuestaSiu').html('');
+ 	var trHTML 	= '';
+ 	trHTML += '<td colspan="2">¿Cómo evaluaría los siguientes aspectos sobre el servicio brindado?</td>';
+ 	$.each( data, function( i, item ){
+	  trHTML += '<td style="text-align:center;vertical-align: middle;">' + item.NOMBRE+'</td>';
+	});
+	$('#tituloencuestaSiu').append(trHTML);	
+	$.ajax({
+		url: '/listaPreguntas',
+		type: 'POST',
+		dataType: 'json',
+		data: {idservicio: 3},
+	})
+	.done(function(data) {
+		$('#preguntasSiu').html('');
+	 	var trHTML1 	= '';	 	
+	 	$.each( data, function( i, item ){
+	 	  var i = i+1;		 
+		  trHTML1 += '<tr class="filaDetIS"><td>'+i+'</td><td style="font-size:10px;text-align:center;vertical-align: middle;">' + item.PREGUNTA +'</td>';
+		  trHTML1 += '<td style="text-align:center"><input type="radio" name="'+i+'" value="'+item.IDX_PREGUNTA+item.IDX_METRICA1+'" ></td>';
+		  trHTML1 += '<td style="text-align:center"><input type="radio" name="'+i+'" value="'+item.IDX_PREGUNTA+item.IDX_METRICA2+'" ></td>';
+		  trHTML1 += '<td style="text-align:center"><input type="radio" name="'+i+'" value="'+item.IDX_PREGUNTA+item.IDX_METRICA3+'" ></td>';
+		  trHTML1 += '<td style="text-align:center"><input type="radio" name="'+i+'" value="'+item.IDX_PREGUNTA+item.IDX_METRICA4+'" ></td>';
+		  trHTML1 += '<td style="text-align:center"><input type="radio" name="'+i+'" value="'+item.IDX_PREGUNTA+item.IDX_METRICA5+'" ></td></tr>';		
+		});
+		$('#preguntasSiu').append(trHTML1);
+	})
+	.fail(function(data) {
+		console.log("error en obtener las preguntas");
+	})
+	.always(function(data) {				
+	});	
+ })
+ .fail(function() {
+ 	console.log("error en obtener las metricas");
+ })
+ .always(function(data){ 	
+ });
+};
+//mencuestasiu
+$("#btnEncuestasiu").click(function(){
+	if (! $("input[name=1]").is(":checked") ) {	 
+		$('#frmErrorencuestaSiu').modal('show');
+	 	$('#frmError_BodyEncuestaSiu').html('Seleccionar una escala de cada pregunta');
+	 	return false;
+	}
+	if (! $("input[name=2]").is(":checked") ) {
+	 	$('#frmErrorencuestaSiu').modal('show');
+	 	$('#frmError_BodyEncuestaSiu').html('Seleccionar una escala de cada pregunta');         
+	 	return false;
+	}
+	if (! $("input[name=3]").is(":checked") ) {	 
+	 	$('#frmErrorencuestaSiu').modal('show');
+	 	$('#frmError_BodyEncuestaSiu').html('Seleccionar una escala de cada pregunta');
+	 	return false;
+	}
+	guardarencuestasiu();
+});
+
+function guardarencuestasiu(){	
+	var idxconstanciaEncuesta = $('#idxconstanciaEncuestasiu').val();
+	var text = "";
+	var i ;
+	$.ajax({
+		url: '/getDataSolicitudCI',
+		type: 'POST',
+		dataType: 'json',
+		data: {'idxconstanciaEncuesta': idxconstanciaEncuesta},
+	})
+	.done(function(data) {
+		var TIPO_DOC = data.TIPO_DOC;
+		var NUMERO_DOC = data.NUMERO_DOC;
+		var NOMBRES = data.NOMBRES;
+		var APELLIDO_PATERNO = data.APELLIDO_PATERNO;
+		var APELLIDO_MATERNO = data.APELLIDO_MATERNO;
+		var TELEFONO = data.TELEFONO;
+		var CORREO = data.CORREO;
+		$('#frmProccesEncuestaSiu').modal('show');
+		for (i = 1; i <= 3; i++) {
+			  if( $("#frmencuestaCIsiu input[name="+i+"]:radio").is(':checked')) {  
+				var valor = $('input:radio[name='+i+']:checked').val();
+				var pregunta = valor.substr(0,1);
+				var respuesta = valor.substr(1,2);	
+				$.ajax({
+					url: '/guardarEncuesta',
+					type: 'POST',
+					dataType: 'json',
+					data: {idxconstanciaEncuesta:idxconstanciaEncuesta,pregunta:pregunta,respuesta:respuesta,TIPO_DOC:TIPO_DOC,NUMERO_DOC:NUMERO_DOC,NOMBRES:NOMBRES,APELLIDO_PATERNO:APELLIDO_PATERNO,APELLIDO_MATERNO:APELLIDO_MATERNO,TELEFONO:TELEFONO,CORREO:CORREO},
+				})
+				.done(function(data) {
+					if(data === 'ok'){
+						$('#frmProccesEncuestaSiu').modal('hide');
+						$('#mencuesta').modal('hide');
+						$('#frmSuccess_BodyEncuestaSiu').html('La encuesta ha sido completada. Gracias por usar nuestro servicio.'+'<br><br><br>'+'<p style="text-align: right;">Superintendencia Nacional de Educación Superior Universitaria<br><img src="/img/sunedu-logo-small.png" width="100"><br></p>');
+						$('#frmSuccessEncuestaSiu').modal('show');
+						var URLactual = window.location.hostname;
+						if (URLactual == 'localhost' || URLactual == 'constanciasdesa.sunedu.gob.pe' ) {
+							var url = 'https://enlineadesa.sunedu.gob.pe/';
+						}else if( URLactual == 'constanciasqa.sunedu.gob.pe'){
+							var url = 'https://enlineaqa.sunedu.gob.pe/';
+						}else{
+							var url = 'https://enlinea.sunedu.gob.pe/';
+						}
+						setTimeout("location.href='"+url+"'", 7000);	
+					}
+				})
+				.fail(function(data) {
+					console.log("error frmencuesta");				
+				})
+				.always(function(data) {
+					console.log("complete frmencuesta");
+				});
+				
+			} else{  
+				$('#frmErrorencuestaSiu').modal('show');
+		     	$('#frmError_BodyEncuestaSiu').html('Seleccionar una escala de cada pregunta');  
+			}
+		}
+	})
+	.fail(function() {
+		console.log("error");
+	})
+	.always(function() {
+		console.log("complete");
+	});	
+} 
+
+/* encuesta constancia de inscripcion en linea **/
+function encuesta(){
+ $.ajax({
+ 	url: '/tituloencuesta',
+ 	type: 'POST',
+ 	dataType: 'json',
+ 	data: { idservicio :1}
+ })
+ .done(function(data) {		
+	$.each( data, function( i, itemE ){
+	 	if( i === 0){
+			$('#titulo_encuesta').html(itemE.TEXT_INTRO);
+	 	}
+	});	
+ 	
+ 	$('#tituloencuesta').html('');
+ 	var trHTML 	= '';
+ 	trHTML += '<td colspan="2">Empleando una escala del 1 al 5, donde 1 es “muy inadecuado” y 5 es “muy adecuado”, dígame:</td>';
+ 	$.each( data, function( i, item ){
+	  trHTML += '<td style="text-align:center;vertical-align: middle;">' + item.NOMBRE+'</td>';
+	});
+	$('#tituloencuesta').append(trHTML);	
+	$.ajax({
+		url: '/listaPreguntas',
+		type: 'POST',
+		dataType: 'json',
+		data: {idservicio: 1},
+	})
+	.done(function(data) {
+		$('#preguntas').html('');
+	 	var trHTML1 	= '';	 	
+	 	$.each( data, function( i, item ){
+	 	  	var i = i+1;		 
+		  	trHTML1 += '<tr class="filaDetIS"><td>'+i+'</td><td style="font-size:10px;text-align:center;vertical-align: middle;">' + item.PREGUNTA +'</td>';
+		  	trHTML1 += '<td style="text-align:center"><input type="radio" name="'+item.IDX_PREGUNTA+'" value="'+item.IDX_PREGUNTA+item.IDX_METRICA1+'" ></td>';
+		  	trHTML1 += '<td style="text-align:center"><input type="radio" name="'+item.IDX_PREGUNTA+'" value="'+item.IDX_PREGUNTA+item.IDX_METRICA2+'" ></td>';
+		  	trHTML1 += '<td style="text-align:center"><input type="radio" name="'+item.IDX_PREGUNTA+'" value="'+item.IDX_PREGUNTA+item.IDX_METRICA3+'" ></td>';
+		  	trHTML1 += '<td style="text-align:center"><input type="radio" name="'+item.IDX_PREGUNTA+'" value="'+item.IDX_PREGUNTA+item.IDX_METRICA4+'" ></td>';
+		  	trHTML1 += '<td style="text-align:center"><input type="radio" name="'+item.IDX_PREGUNTA+'" value="'+item.IDX_PREGUNTA+item.IDX_METRICA5+'" ></td></tr>';		
+		});
+		$('#preguntas').append(trHTML1);
+	})
+	.fail(function(data) {
+		console.log("error en obtener las preguntas");
+	})
+	.always(function(data) {				
+	});	
+ })
+ .fail(function() {
+ 	console.log("error en obtener las metricas");
+ })
+ .always(function(data){ 	
+ });
+};
+
+$("#btnEnviarEncuesta").click(function(){
+	if (! $("input[name=1]").is(":checked") ) {	 
+	 	$('#frmErrorEncuesta').modal('show');
+	 	$('#frmError_BodyEncuesta').html('Seleccionar una escala de cada pregunta');
+	 	return false;
+	}
+	if (! $("input[name=2]").is(":checked") ) {
+	 	$('#frmErrorEncuesta').modal('show');
+	 	$('#frmError_BodyEncuesta').html('Seleccionar una escala de cada pregunta');         
+	 	return false;
+	}
+	if (! $("input[name=3]").is(":checked") ) {	 
+	 	$('#frmErrorEncuesta').modal('show');
+	 	$('#frmError_BodyEncuesta').html('Seleccionar una escala de cada pregunta');
+	 	return false;
+	}
+	frmencuesta();
+});
+function frmencuesta(){
+	$('#frmProccesEncuesta').modal('show');
+	var idxconstanciaEncuesta = $('#idxconstanciaEncuesta').val();
+	var text = "";
+	var i ;
+
+	$.ajax({
+		url: '/getDataSolicitudCI',
+		type: 'POST',
+		dataType: 'json',
+		data: {'idxconstanciaEncuesta': idxconstanciaEncuesta},
+	})
+	.done(function(data) {
+		var TIPO_DOC = data.TIPO_DOC;
+		var NUMERO_DOC = data.NUMERO_DOC;
+		var NOMBRES = data.NOMBRES;
+		var APELLIDO_PATERNO = data.APELLIDO_PATERNO;
+		var APELLIDO_MATERNO = data.APELLIDO_MATERNO;
+		var TELEFONO = data.TELEFONO;
+		var CORREO = data.CORREO;
+
+		for (i = 1; i <= 3; i++) {
+			if( $("#encuestaConstanciaInscripcion input[name="+i+"]:radio").is(':checked')) {  
+				var valor = $('input:radio[name='+i+']:checked').val();
+				var pregunta = valor.substr(0,1);
+				var respuesta = valor.substr(1,1);			
+				$.ajax({
+					url: '/guardarEncuesta',
+					type: 'POST',
+					dataType: 'json',
+					data: {idxconstanciaEncuesta:idxconstanciaEncuesta,pregunta:pregunta,respuesta:respuesta,TIPO_DOC:TIPO_DOC,NUMERO_DOC:NUMERO_DOC,NOMBRES:NOMBRES,APELLIDO_PATERNO:APELLIDO_PATERNO,APELLIDO_MATERNO:APELLIDO_MATERNO,TELEFONO:TELEFONO,CORREO:CORREO},
+				})
+				.done(function(data) {
+					if(data === 'ok'){
+						$('#frmProccesEncuesta').modal('hide');
+						$('#mencuesta').modal('hide');
+						$('#frmSuccess_BodyEncuesta').html('Gracias por responder la encuesta');
+						$('#frmSuccessEncuesta').modal('show');
+						location.reload();
+					}
+				})
+				.fail(function(data) {
+					console.log("error frmencuesta");				
+				})
+				.always(function(data) {
+					console.log("complete frmencuesta");
+				});
+				
+			} else{  
+				$('#frmErrorEncuesta').modal('show');
+	         	$('#frmError_BodyEncuesta').html('Seleccionar una escala de cada pregunta');  
+			}
+		}
+	})
+	.fail(function() {
+		console.log("error");
+	})
+	.always(function() {
+		console.log("complete");
+	});	
+} 

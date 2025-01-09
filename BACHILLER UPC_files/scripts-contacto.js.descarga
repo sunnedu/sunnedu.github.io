@@ -1,0 +1,283 @@
+/* TIPO ASUNTO */  
+$(document).ready(function(){ 
+  $('#codNumeDocumento1').css( "width","100%");
+  $('#btntraerdatosPersonae').attr("disabled",true);
+  $('#btntraerdatosPersona').attr("disabled",true);
+  $("#contactoForm")[0].reset();
+
+  $("#desEmail,#desEmailVal").on('paste', function(e){
+    e.preventDefault();
+  }) 
+
+});
+
+$(document ).ajaxComplete(function() {
+});
+jQuery.extend(jQuery.validator.messages, {
+  required: "*",
+  remote: "Por favor, rellena este campo.",
+  email: "Por favor, escribe una dirección de correo válida",
+  url: "Por favor, escribe una URL válida.",
+  date: "Por favor, escribe una fecha válida.",
+  dateISO: "Por favor, escribe una fecha (ISO) válida.",
+  number: "Por favor, escribe un número entero válido.",
+  digits: "Por favor, escribe sólo dígitos.",
+  creditcard: "Por favor, escribe un número de tarjeta válido.",
+  equalTo: "Por favor, escribe el mismo valor de nuevo.",
+  accept: "Por favor, escribe un valor con una extensión aceptada.",
+  maxlength: jQuery.validator.format("Por favor, no escribas más de {0} caracteres."),
+  minlength: jQuery.validator.format("Por favor, no escribas menos de {0} caracteres."),
+  rangelength: jQuery.validator.format("Por favor, escribe un valor entre {0} y {1} caracteres."),
+  range: jQuery.validator.format("Por favor, escribe un valor entre {0} y {1}."),
+  max: jQuery.validator.format("Por favor, escribe un valor menor o igual a {0}."),
+  min: jQuery.validator.format("Por favor, escribe un valor mayor o igual a {0}.")
+});
+$(document).on('change, keyup', '#codNumeDocumento', function(event) {
+  $("#desNombre").val('');
+});
+$(document).on('change', '#tipoDocumento', function(event) {
+  var doc = $('#tipoDocumento').val(); 
+  $("#desNombre").val('');
+  $('#codNumeDocumento').val('');
+  if (doc == 'DNI') {           
+    $('#codNumeDocumento').attr('minlength', 8);
+    $('#codNumeDocumento').attr('maxlength', 8);
+    $('#codNumeDocumento1').css( "width","100%");
+    $('#btntraerdatosPersonae').attr("disabled",false);
+    $('#btntraerdatosPersona').attr("disabled",false);
+    $("#desNombre").attr('readonly',false); 
+    $('#codNumeDocumento').on('change,keyup',function (){
+      this.value = (this.value + '').replace(/[^0-9]/g, '');
+    });
+    
+  }else{
+   
+    $('#codNumeDocumento').attr('minlength', 6);
+    $('#codNumeDocumento').attr('maxlength', 15);
+    $('#btntraerdatosPersonae').attr("disabled",true);
+    $('#btntraerdatosPersona').attr("disabled",true);   
+    $("#desNombre").attr('readonly',false); 
+    $('#codNumeDocumento').on('change,keyup',function (){
+      this.value = this.value.replace(/[^ a-z0-9áéíóúüñ]+/ig,"");
+    });
+  }
+
+
+$("#contactoForm").submit(function(e) {
+  e.preventDefault();
+  }).validate({
+  rules: {
+    desEmail: {
+      required: true,
+      email: true
+    },
+    desEmailVal: {
+      required: true,
+      email: true
+    },
+    codNumeDocumento: {
+      required: true,
+    },
+    tipoConsulta: {
+      required: true,
+      minlength: 1
+    },  
+    desTelefono:{
+      required: true,
+    },
+    desAsunto:{
+      required: true,
+      minlength:1
+    } 
+  },
+ submitHandler: function(form) { 
+  var pemail = $('#desEmail').val();
+  var semail = $('#desEmailVal').val();
+  var txtAporte = $('#txtAporte').val().length;  
+
+  if (pemail == semail) 
+  {
+    if (  txtAporte <= 500) {
+      $.ajax({
+       url: 'saveContacto',
+       type: 'POST',
+       dataType: 'json',
+       data: $(form).serialize(),
+       beforeSend: function(){
+          $('#frmProcesscontacto').modal({
+            backdrop: 'static',
+            keyboard: false
+          });            
+        },
+        complete: function(data){    
+          if (data.responseJSON.response == 'error') {
+            $('#frmProcesscontacto').modal('toggle');
+            $('#frmError_Bodycontacto').html(data.responseJSON.message);
+            $('#frmErrorcontacto').modal('show');
+          }else{
+            $('#frmSuccesscontacto').modal('show');
+            $('#frmSuccess_Bodycontacto').html('<p><strong>SUNEDU</strong> agradece tu comentario. Fue enviado con éxito.</p>');
+            $('#frmProcesscontacto').modal('hide');
+             $("#contactoForm")[0].reset();
+          }
+          refrescarCaptchaContacto();
+        },
+        success: function (data) {    },
+        error: function(errors){   
+                $('#frmProcesscontacto').modal('hide');
+                $('#frmError_Bodycontacto').html('Verificar que todos los campos obligatorios (*) esten ingresados');
+                $('#frmErrorcontacto').modal('show');
+                refrescarCaptchaContacto();
+        }
+        });
+    }else{
+      $('#frmError_Bodycontacto').html('Ingresar máximo 500 caracteres');
+      $('#frmErrorcontacto').modal('show');
+    }
+  }  
+  else{
+    $('#frmError_Bodycontacto').html('Verificar que los dos correos electrónicos sean iguales');
+    $('#frmErrorcontacto').modal('show');
+  }
+}
+});
+/*$("#btntraerdatosPersona").on('click',function(){
+  var dni = $('#codNumeDocumento').val();  
+  var doc = $('#tipoDocumento').val();
+  if (dni.length==8 && doc == 'DNI'){  
+    buscarReniec();
+  }
+  else {
+    $("#desNombre").val('');
+    $("#desNombre").prop('readonly',false);
+  }
+});
+$("#btntraerdatosPersonae").on('click',function(){
+  var dni = $('#codNumeDocumento').val();  
+  var doc = $('#tipoDocumento').val(); 
+  if (dni.length==8 && doc == 'DNI' && isNaN(dni) == false){  
+    buscarReniec();
+  }else if(dni.length!=8  && doc == 'DNI'){   
+    $('#frmErrorcontacto').modal('show');
+    $('#frmError_Bodycontacto').html('Ingresar un número de DNI correcto.');
+  }else if(dni.length==8 && isNaN(dni) == true  && doc == 'DNI'){
+    $('#frmErrorcontacto').modal('show');
+    $('#frmError_Bodycontacto').html('Ingresar un número de DNI correcto.');
+  }
+  else {
+    $("#desNombre").val('');
+    $("#desNombre").attr('readonly',false);
+  }
+});
+
+  function buscarReniec(){  
+    var dni = $('#codNumeDocumento').val(); 
+    var datos = {
+      'txtnumdocumento'  :  dni,
+    };
+
+    $.ajax({ 
+      url: 'getDatos',
+      type: 'POST',
+      dataType: "json",
+      data:  datos,
+      beforeSend: function(){
+      }
+    })
+    .done(function(data) {
+      var codigo = data['respuesta'].cGenerico;
+      if(codigo == '00000')
+      {
+        var output = data['outPut'].coResultado;
+        if (output == '0000') {
+          var nombres = data['outPut'].datosPersona['prenombres'];
+          var apellidoPaterno = data['outPut'].datosPersona['apPrimer'];
+          var apellidoMaterno = data['outPut'].datosPersona['apSegundo'];              
+          $("#txtrazonsocial").val(''); 
+          $("#txtrazonsocial").attr('disabled','disabled'); 
+          $("#txtnombres").attr('disabled','disabled');
+          $('#desNombre').val(nombres+' '+apellidoPaterno+' '+apellidoMaterno);
+                   
+        }else{            
+          $('#frmProcess').modal('hide');
+          $('#frmError_Bodycontacto').html('No se obtuvo información para el número de DNI ' + dni + ' .Por favor, digite los datos solicitados');
+          $('#frmErrorcontacto').modal('show'); 
+          $("#desNombre").val('');
+          $("#desNombre").attr('readonly',false);
+        }
+      }
+      else
+      {  
+        $('#frmProcess').modal('hide');
+        $('#frmError_Bodycontacto').html('No se obtuvo información para el número de DNI ' + dni + ' .Por favor, digite los datos solicitados');
+        $('#frmErrorcontacto').modal('show'); 
+        $("#desNombre").val('');
+        $("#desNombre").attr('readonly',false);
+      }       
+    })
+    .fail(function() {
+      $('#frmProcess').modal('hide'); 
+      $('#frmError_Bodycontacto').html('Error al buscar el numero de documentos de identidad.');
+      $('#frmErrorcontacto').modal('show');    
+    })
+    .always(function() {
+       // console.log("complete");    
+    });
+  }*/
+});
+/* catpcha */
+$("body").on('click', '#captchaRefreshContacto', function (e) {
+    e.preventDefault();
+    refrescarCaptchaContacto();     
+  });
+
+
+function refrescarCaptchaContacto(){
+    $.ajax({
+      url: '/imageCaptcha',
+      type: 'GET',
+      beforeSend: function(){
+      $('#frmProcessEmisionCI').modal('hide');  
+    }
+    })
+    .done(function() {
+    captcha = $("#captchaImgContacto");
+    var img = $('<img>');
+    var d = new Date();
+    var n = d.getMilliseconds();
+    var urlBase = window.location.protocol + "//"+window.document.domain;
+    img.attr('src', urlBase+'/imageCaptcha');
+    captcha.empty();
+      captcha.append(img);
+      $('#captcharpri').val('').focus();
+    })
+    .fail(function() {
+    })
+    .always(function() {
+    });
+
+}
+setInterval("refrescarCaptchaContacto()",6*60*1000);
+
+$("body").on('keydown','.solonumeros',function(event) {
+  if(event.shiftKey)
+  {
+    event.preventDefault();
+  }
+
+  if (event.keyCode == 46 || event.keyCode == 8)    {
+  }
+  else {
+    if (event.keyCode < 95) {
+      if (event.keyCode < 48 || event.keyCode > 57) {
+        event.preventDefault();
+      }
+    } 
+    else {
+      if (event.keyCode < 96 || event.keyCode > 105) {
+        event.preventDefault();
+      }
+    }
+  }
+});
+

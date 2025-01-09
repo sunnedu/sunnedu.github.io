@@ -1,0 +1,2196 @@
+﻿// CONSTANCIA DE INSCRIPCION EN LINEA
+function constanciaExtrSiu(documento){
+	var idSolicitud = ''
+	$.ajax({
+		url: 'contExtSiu',
+		type: 'POST',
+		dataType: 'json',
+		// data: { documento:documento,idSolicitud : idSolicitud }
+		data: $('#consultaFormPriv').serialize() + '&' + $.param({documento: documento, idSolicitud: idSolicitud}),
+		beforeSend: function(){
+			$('#frmProcessConsultasEmision').modal({
+		      backdrop: 'static',
+		      keyboard: false
+		    });  
+		}
+	})
+	.done(function(data) {
+		$('#frmProcessConsultasEmision').modal('hide');
+		if ( data.length > 0 ) {		
+			var trHTMLExtsiu = '';	
+				var co = 0;
+			$.each(data, function(i, item) {
+				$('#docPriv').prop('readonly', true);
+				$("#buscarPriv").remove();
+				$("#btnLimpiarci").remove();
+				if (item.flgResolucionNulidad != 1) {
+				co = co +1;
+				var tipoArchivo = item.tipoArchivo;
+				trHTMLExtsiu += '<tr><td data-column="Institución" style="font-size:12px; vertical-align:center;text-align:left;font-family:Poppins-Medium !important; color:#044bb1 !important;border-color:#044bb1 !important;">'+ item.persona +'</br></br>';
+				/* Lista de universidades y paises*/
+				var datainstitucion = jQuery.parseJSON(item.entidades);
+				$.each(datainstitucion, function(key, itemdata) 
+				{				   
+				   trHTMLExtsiu += itemdata.UNIVERSIDAD+'<br>';
+				   trHTMLExtsiu += '<b><i>'+itemdata.PAIS+'</i></b><br>';
+				});
+				trHTMLExtsiu += '</td>';
+				trHTMLExtsiu += '<td data-column="Grado" style="font-size:12px; vertical-align:center; text-align:left;font-family:Poppins-Medium !important; color:#044bb1 !important;border-color:#044bb1 !important;">'+item.denominacionDiploma;
+				trHTMLExtsiu += '<br><b><i>TIPO:</b>'+item.estadoReconocimiento+'</i><br><br>';
+				trHTMLExtsiu += '<ul><li style="list-style: none;" >Fecha de Resolución de Reconocimiento:&nbsp'+ item.fechaResolucion + '</li></ul>';
+				
+				if ( item.numDiplReva != null) {
+					if (item.numDiplReva.length > 0) {
+						trHTMLExtsiu += '<b>REVALIDADO</b> (<span id=grado'+item.idSolicitud+' name="grado"></span>) POR <span id=uni'+item.idSolicitud+' name="grado"></span>';
+						trHTMLExtsiu += '<br>Fecha de Resolución de Revalida: <span id=fecresolucion'+item.idSolicitud+' name="fecresolucion"></span>';
+						trHTMLExtsiu += '<br>Fecha de Diploma: <span id=fecdiploma'+item.idSolicitud+' name="fecdiploma"></span><br>';
+						dataRevaSiu(item.idSolicitud);
+					}
+				}
+				if (item.nombrePaisExtranjero == 'PARAGUAY') {
+			        trHTMLExtsiu += '<br><small>* Al sólo efecto de la prosecución de otros estudios de post grado y al sólo para el ejercicio de actividades académicas en Universidades de ambas Partes. Dicho reconocimiento no habilita para el ejercicio profesional</small>'
+			    }
+			    if (item.comentarios != '') {
+			        trHTMLExtsiu += '<br><br><small>' + item.comentarios + '</small>';
+			    }
+				trHTMLExtsiu += '</td>';	    
+				trHTMLExtsiu += '<td data-column="Opciones" style="font-size:12px; vertical-align:center;text-align:center;border-color:#044bb1 !important;">';
+				
+				trHTMLExtsiu += '<span id='+item.idSolicitud+' onclick="selSolicitudPDFSiu('+ item.idSolicitud +')"; data-balloon="Ver Constancia" class="btn btn-primary btn-md btn-ver"><span class="glyphicon glyphicon-file"></span> </span>';
+				// trHTMLExtsiu += '<span id=emitido'+item.idSolicitud+' style="color:#2fc7f0;display: none; font-weight:bold;"> Emitido</span>';
+				trHTMLExtsiu += '<a id="emitido' + item.idSolicitud + '" href="#" target="_blank" style="color:#2fc7f0; display: none; font-weight: bold; text-decoration: none;">Emitido</a>';
+				
+				trHTMLExtsiu += '</td></tr>';
+			}
+			})
+			if (co == 0 ) {
+				$('#frmProcess').modal('hide');
+				$('#frmError').modal('toggle');
+				$('#frmError_Body').html('<p>No se encontraron resultados.</p>');
+				$('#resultado_privada_box').addClass('hidden');
+				$('html,body').animate({scrollTop: $("#resultado_privada_box").offset().top},'slow');
+				refrescarCaptchapriv();
+			}else{
+				$('#finalDataPriv').html('');
+				$('#finalDataPriv').append(trHTMLExtsiu);
+				refrescarCaptchapriv();
+				$('#imprimirPriv').attr('disabled',false);
+				$('.mensajes-especiales').removeClass('hidden');
+				$('#resultado_privada_box').removeClass('hidden');
+				$('html,body').animate({scrollTop: $("#resultado_privada_box").offset().top},'slow');	
+
+			}
+		}else{			
+			$('#frmProcess').modal('hide');
+			$('#frmError').modal('toggle');
+			$('#frmError_Body').html('<p>No se encontraron resultados.</p>');
+			$('#resultado_privada_box').addClass('hidden');
+			$('html,body').animate({scrollTop: $("#resultado_privada_box").offset().top},'slow');
+			refrescarCaptchapriv();
+		}			
+	})
+	.fail(function() {				
+		$('#finalDataPriv').html('');
+	})
+	.always(function() {				
+		//console.log("complete E2");
+	});	
+}
+// Busqueda privada Constancia de Inscripción en linea
+function cargarDiplomas(){
+	var codigoPriv = $('#codigoPriv').val();
+	$.ajax({
+		url: 'consulta',
+		type: 'POST',
+		dataType: 'json',
+		data: $('#consultaFormPriv').serialize(),
+		beforeSend: function(){
+			$('#frmProcessConsultasEmision').modal({
+		      backdrop: 'static',
+		      keyboard: false
+		    });  
+		}
+	})
+	.done(function(data) {	
+		if (data.response == 'error'){
+			$('#frmProcessConsultasEmision').modal('hide');
+			$('#frmError').modal('toggle');
+			$('#frmError_Body').html('<p>EL código CAPTCHA ingresado no es correcto.</p>');
+			refrescarCaptchapriv();
+		} else if (data == '[[\"0\"]]' || data === '[]'){ //valida si tiene data en nacionales y despues va a extranjeros
+			$('#frmProcessConsultasEmision').modal('hide');
+			var docPriv = $('#docPriv').val();
+			constanciaExtrSiu(docPriv);
+		} else {
+			$('#docPriv').prop('readonly', true);
+			$("#buscarPriv").remove();
+			$("#btnLimpiarci").remove();
+			$('#frmProcessConsultasEmision').modal('hide');
+			refrescarCaptchapriv();
+			var trHTML 	= '';
+			var tipodoc = '';
+			var numdoc 	= '';
+			var dR 		= [];
+			var dRev 	= [];
+			var dRev2 	= [];
+
+			$.each($.parseJSON(data), function(i, row) {
+				if(row.esRevalida==true){ // revalida
+					revHTML = "";
+					revHTML += '<br><br><b>REVALIDADO</b> ('+row.gradTitu+') POR<br>';
+					revHTML += row.universidad+'<br>Fecha de Resolución de Revalida: '+row.resoFec;
+					revHTML += '<br>Fecha de Diploma:'+row.diplFec;
+					detRev = [{"RESO_NUM": row.resoNum,"revHTML": revHTML}];
+					dRev.push(detRev);
+					dR.push(row.resoNum);
+				}				
+				dRev2.push(row.RV_NUM_DIPL_REVA);					
+			});
+			/* DOCTORADO ESPECIAL Y PREGRADO ESPECIAL*/
+			var uni='';
+			var pais;
+			var ESC_CARR;
+			var NUM_DOC;
+			var ID_CONST;
+			var TIPO_DOC_ESP = 'N';
+			var diploma_DOC_ESP = '';
+			var BIT_FTP_DOC_ESP = '' ;
+			var idarchivoftp_DOC_ESP = '';
+			var rutaftp_DOC_ESP = '';
+			var archivodiploma_DOC_ESP = '';
+
+			var dniDoc = $('#docPriv').val();	
+			var codigoDoc = $('#codigoPriv').val();
+			var UNI_RESO_NUM = $(this).data('uni_reso_num');
+			var direcDoct ='';
+			var c=0;
+			$.each($.parseJSON(data), function(i, doc) {
+				if (doc.bitDocEsp == "1") {
+					if(doc.codAbreGyt == "D"){
+						uni = '1.PONTIFICIA UNIVERSIDAD CATÓLICA DEL PERÚ<br>2.UNIVERSIDAD PERUANA CAYETANO HEREDIA<br>3.UNIVERSIDAD DEL PACÍFICO<br>4.UNIVERSIDAD DE LIMA';
+						pais = doc.PAIS;
+						 if (doc.resoNum === doc.uniResoNum) {
+						 	ESC_CARR = doc.gradTitu;
+							NUM_DOC = doc.docuNum; 
+							ID_CONST= doc.ID;
+							diploma_DOC_ESP = doc.ARCHIVO;
+							BIT_FTP_DOC_ESP = doc.BIT_FTP;
+							idarchivoftp_DOC_ESP = doc.ID_ARCHIVO_FTP;
+							rutaftp_DOC_ESP = doc.RUT_ARCHIVO_FTP;
+							archivodiploma_DOC_ESP = doc.ARCHIVO_DIPLOMA;						
+					 	}
+					}else if(doc.codAbreGyt == "B"){
+						uni = '1.PONTIFICIA UNIVERSIDAD CATÓLICA DEL PERÚ<br>2.UNIVERSIDAD PERUANA CAYETANO HEREDIA';
+					
+						 pais = doc.PAIS;
+						 if (doc.resoNum === doc.uniResoNum) {
+						 	ESC_CARR = 'AAAA';
+							NUM_DOC = doc.docuNum; 
+							ID_CONST= doc.ID;
+							diploma_DOC_ESP = doc.ARCHIVO;
+							BIT_FTP_DOC_ESP = doc.BIT_FTP;
+							idarchivoftp_DOC_ESP = doc.ID_ARCHIVO_FTP;
+							rutaftp_DOC_ESP = doc.RUT_ARCHIVO_FTP;
+							archivodiploma_DOC_ESP = doc.ARCHIVO_DIPLOMA;						
+					 	}
+					}else if(doc.codAbreGyt == "T"){
+						uni = '1.PONTIFICIA UNIVERSIDAD CATÓLICA DEL PERÚ<br>2.UNIVERSIDAD PERUANA CAYETANO HEREDIA';
+					
+						 pais = doc.PAIS;
+						 if (doc.resoNum === doc.uniResoNum) {
+						 	ESC_CARR = 'BBBB';
+							NUM_DOC = doc.docuNum; 
+							ID_CONST= doc.ID;
+							diploma_DOC_ESP = doc.ARCHIVO;
+							BIT_FTP_DOC_ESP = doc.BIT_FTP;
+							idarchivoftp_DOC_ESP = doc.ID_ARCHIVO_FTP;
+							rutaftp_DOC_ESP = doc.RUT_ARCHIVO_FTP;
+							archivodiploma_DOC_ESP = doc.ARCHIVO_DIPLOMA;						
+					 	}
+					}
+				}
+			});			
+			$.each($.parseJSON(data), function(i, item) { 
+				var PAIS='PERU';
+				var COMENTARIO = '-';
+				// bachiller y doctorado especial
+				if (item.resoNum == item.uniResoNum && item.bitDocEsp == "1" && PAIS == 'PERU' && item.flgResolucionNulidad!=1) {	
+					trHTML += '<tr><td data-column="Institución" style="font-size:12px; vertical-align:center;text-align:left; font-family:Poppins-Medium !important; color:#044bb1 !important;border-color:#044bb1 !important;">'+ item.apepat +' '+ item.apemat +',' + item.nombre+'<br><br>';
+					trHTML += uni; 
+					trHTML += '</br><b><i>' + PAIS + '</i></b></td>';
+					if (item.codAbreGyt == "B") {
+						trHTML += '<td data-column="Grado" style="font-size:12px; vertical-align:center; text-align:left;font-family:Poppins-Medium !important; color:#044bb1 !important;border-color:#044bb1 !important;">'+item.gradTitu+'</td>';
+					}
+					if (item.codAbreGyt == "T") {
+						trHTML += '<td data-column="Grado" style="font-size:12px; vertical-align:center; text-align:left;font-family:Poppins-Medium !important; color:#044bb1 !important;border-color:#044bb1 !important;">'+item.gradTitu+'</td>';
+					}
+					if (item.codAbreGyt == "D") {
+						trHTML += '<td data-column="Grado" style="font-size:12px; vertical-align:center; text-align:left;font-family:Poppins-Medium !important; color:#044bb1 !important;border-color:#044bb1 !important;">'+item.gradTitu+'</td>';
+					}
+					trHTML += '<td data-column="Opciones" style="font-size:12px; vertical-align:center; text-align:center;font-family:Poppins-Medium !important; color:#044bb1 !important;border-color:#044bb1 !important;"><span id='+item.idSolicitud+' onclick="selSolicitudPDF('+item.idSolicitud+',\''+TIPO_DOC_ESP+'\')"; data-balloon="Ver Constancia" class="btn btn-primary btn-md btn-ver" formtarget="_self"><span class="glyphicon glyphicon-file"></span> </span>';
+					// trHTML += '<span id=emitido'+item.idSolicitud+' style="color:#2fc7f0;display: none;font-weight:bold;">Emitido</span>';
+					trHTML += '<a id="emitido' + item.idSolicitud + '" href="#" target="_blank" style="color:#2fc7f0; display: none; font-weight: bold; text-decoration: none;">Emitido</a>';
+					trHTML += '</td></tr>';
+				}
+				
+			    tipodoc = item.docuTip;
+			    numdoc = item.docuNum;				
+			    $('#idxconstanciaEncuesta').val(numdoc);
+			    // revalida
+				if(item.esRevalida==true && item.bitDocEsp != "1" && PAIS == 'PERU' && item.flagRev != true && item.flgResolucionNulidad!=1){
+					if(dRev2.indexOf(item.resoNum)==-1){
+					    trHTML += '<tr><td data-column="Institución" style="font-size:12px; vertical-align:center;text-align:left;font-family:Poppins-Medium !important; color:#044bb1 !important;border-color:#044bb1 !important;">' + item.apepat +' '+ item.apemat +',' + item.nombre+'<br><br>';
+					    trHTML += item.universidad;
+						trHTML += '</br><b><i>' + PAIS + '</i></b>';
+						trHTML += '</td>';
+					    trHTML += '<td data-column="Grado" style="font-size:12px; vertical-align:center; text-align:left;font-family:Poppins-Medium !important; color:#044bb1 !important;border-color:#044bb1 !important;">' + item.gradTitu;
+					    if (item.PAIS == 'PARAGUAY') {
+					        trHTML += '<br><small>* Al sólo efecto de la prosecución de otros estudios de post grado y al sólo para el ejercicio de actividades académicas en Universidades de ambas Partes. Dicho reconocimiento no habilita para el ejercicio profesional</small>'
+					    }
+					    if (COMENTARIO != '-') {
+					        trHTML += '<br><br><small>' + COMENTARIO + '</small>';
+					    }
+					    trHTML += '</td>';
+					    trHTML += '<td data-column="Opciones" style="font-size:12px; vertical-align:center; text-align:center;font-family:Poppins-Medium !important; color:#044bb1 !important;border-color:#044bb1 !important;">';
+						trHTML += '<span id='+item.idSolicitud+' onclick="selSolicitudPDF('+item.idSolicitud+',\'N\')"; data-balloon="Ver Constancia" class="btn btn-primary btn-md btn-ver" formtarget="_self"><span class="glyphicon glyphicon-file"></span> </span>';
+						// trHTML += '<span id=emitido'+item.idSolicitud+' style="color:#2fc7f0;display: none;font-weight:bold;">Emitido</span>';
+						trHTML += '<a id="emitido' + item.idSolicitud + '" href="#" target="_blank" style="color:#2fc7f0; display: none; font-weight: bold; text-decoration: none;">Emitido</a>';
+					    trHTML += '</td></tr>';
+					}
+				}
+				
+				if(item.diplTipEmi!="REVALIDA" && item.esRevalida !=true  && item.bitDocEsp != "1" && PAIS == 'PERU' && item.flagRev != true && item.flgResolucionNulidad!=1){
+				   trHTML += '<tr><td data-column="Institución" style="font-size:12px; vertical-align:center;text-align:left;font-family:Poppins-Medium !important; color:#044bb1 !important;border-color:#044bb1 !important;">' + item.apepat +' '+ item.apemat +',' + item.nombre+'<br><br>';
+				    trHTML += item.universidad;
+					trHTML += '</br><b><i>' + PAIS + '</i></b>';
+					trHTML += '</td>';
+				    if(dRev.length>0){
+						if($.inArray(item.RV_NUM_DIPL_REVA, dR)>=0){
+				    		trHTML += '<td data-column="Grado" style="font-size:12px; vertical-align:center; text-align:left;font-family:Poppins-Medium !important; color:#044bb1 !important;border-color:#044bb1 !important;">' + item.gradTitu + dRev[$.inArray(item.RV_NUM_DIPL_REVA, dR)][0].revHTML;
+				    	}else{
+				    		trHTML += '<td data-column="Grado" style="font-size:12px; vertical-align:center;text-align:left;font-family:Poppins-Medium !important; color:#044bb1 !important;border-color:#044bb1 !important;">' + item.gradTitu;	
+				    	}
+				    }else{
+				    	trHTML += '<td data-column="Grado" style="font-size:12px; vertical-align:center;text-align:left;font-family:Poppins-Medium !important; color:#044bb1 !important;border-color:#044bb1 !important;">' + item.gradTitu;	
+				    }				    
+
+				    if (PAIS == 'PARAGUAY') {
+				        trHTML += '<br><small>* Al sólo efecto de la prosecución de otros estudios de post grado y al sólo para el ejercicio de actividades académicas en Universidades de ambas Partes. Dicho reconocimiento no habilita para el ejercicio profesional</small>'
+				    }
+				    if (COMENTARIO != '-') {
+				        trHTML += '<br><br><small>' + COMENTARIO + '</small>';
+				    }
+				    trHTML += '</td>';
+				    trHTML += '<td data-column="Opcion" style="font-size:12px; vertical-align:center; text-align:center;border-color:#044bb1 !important;">';		    
+					/******/
+					if(dRev.length>0){
+				    	if($.inArray(item.RV_NUM_DIPL_REVA, dR)>=0){
+				    		trHTML += '<span id='+item.idSolicitud+' onclick="selSolicitudPDF('+item.idSolicitud+',\'N\')"; data-balloon="Ver Constancia" class="btn btn-primary btn-md btn-ver" formtarget="_self"><span class="glyphicon glyphicon-file"></span> </span>';
+				    		// trHTML += '<span id=emitido'+item.idSolicitud+' style="color:#2fc7f0;display: none;font-weight:bold;">Emitido</span>';
+				    		trHTML += '<a id="emitido' + item.idSolicitud + '" href="#" target="_blank" style="color:#2fc7f0; display: none; font-weight: bold; text-decoration: none;">Emitido</a>';
+				    	}else{
+				    		trHTML += '<span id='+item.idSolicitud+' onclick="selSolicitudPDF('+item.idSolicitud+',\'N\')"; data-balloon="Ver Constancia" class="btn btn-primary btn-md btn-ver" formtarget="_self"><span class="glyphicon glyphicon-file"></span> </span>';
+				    		// trHTML += '<span id=emitido'+item.idSolicitud+' style="color:#2fc7f0;display:none;font-weight:bold;">Emitido</span>';
+				    		trHTML += '<a id="emitido' + item.idSolicitud + '" href="#" target="_blank" style="color:#2fc7f0; display: none; font-weight: bold; text-decoration: none;">Emitido</a>';
+				    	}
+					}else{
+						trHTML += '<span id='+item.idSolicitud+' onclick="selSolicitudPDF('+item.idSolicitud+',\'N\')"; data-balloon="Ver Constancia" class="btn btn-primary btn-md btn-ver" formtarget="_self"><span class="glyphicon glyphicon-file"></span> </span>';
+						// trHTML += '<span id=emitido'+item.idSolicitud+' style="color:#2fc7f0;display: none;font-weight:bold;">Emitido</span>';
+						trHTML += '<a id="emitido' + item.idSolicitud + '" href="#" target="_blank" style="color:#2fc7f0; display: none; font-weight: bold; text-decoration: none;">Emitido</a>';
+					}
+				    trHTML += '</td></tr>';
+				}
+			});	
+		var docPriv = $('#docPriv').val();
+		dataConstanciaExtrSiu(docPriv);
+
+$('#finalDataPriv').html('');
+$('#finalDataPriv').append(trHTML);
+$('#imprimirPriv').attr('disabled',false);
+$('.mensajes-especiales').removeClass('hidden');
+$('#resultado_privada_box').removeClass('hidden');
+$('html,body').animate({scrollTop: $("#resultado_privada_box").offset().top},'slow');
+}		
+});
+$('#frmProcessConsultaEmision').modal('hide');
+}
+
+function dataConstanciaExtrSiu(documento){
+	var idSolicitud = ''
+	$.ajax({
+		url: 'contExtSiu',
+		type: 'POST',
+		dataType: 'json',
+		// data: {documento:documento,idSolicitud : idSolicitud}//$('#consultaForm').serialize(),
+		data: $('#consultaFormPriv').serialize() + '&' + $.param({documento: documento, idSolicitud: idSolicitud})
+	})
+	.done(function(data) {
+		trHTML = '';
+		if (data.length > 0) {
+		$('#docPriv').prop('readonly', true);
+		$("#buscarPriv").remove();	
+		$("#btnLimpiarci").remove();	
+			
+			$.each(data, function(i, item) {
+				if (item.flgResolucionNulidad != 1) {
+					var tipoArchivo = item.tipoArchivo;
+					trHTML += '<tr><td data-column="Institución" style="font-size:12px; vertical-align:center;text-align:left;font-family:Poppins-Medium !important; color:#044bb1 !important;">'+item.persona+'</br></br>';
+					/* Lista de universidades y paises*/
+						var datainstitucion = jQuery.parseJSON(item.entidades);
+						$.each(datainstitucion, function(key, itemdata) 
+						{
+						   
+						   trHTML += itemdata.UNIVERSIDAD+'<br>';
+						   trHTML += '<b><i>'+itemdata.PAIS+'</i></b><br>';
+						});
+					trHTML += '</td>';
+					trHTML += '<td data-column="Grado" style="font-size:12px; vertical-align:center;text-align:left;font-family:Poppins-Medium !important; color:#044bb1 !important;"><b>'+item.denominacionDiploma;
+					trHTML += '<br>Fecha de Diploma:'+item.fechaEmisionDiploma+'</b>';
+					trHTML += '<br><b><i>TIPO:</i><ul><li>'+item.estadoReconocimiento+'</li></ul></b>';
+					trHTML += '<ul><li style="list-style: none;" >Fecha de Resolución de Reconocimiento:&nbsp'+ item.fechaResolucion + '</li></ul>';	
+
+					trHTML += '<b>Modalidad de estudios:'+item.modalidadEstudio+'<b><br>';
+					trHTML += '<b>Duración de estudios:'+item.duracionEstudios+'<b><br><br>';
+					if ( item.numDiplReva != null) {
+						if (item.numDiplReva.length > 0) {
+							trHTML += '<b><span id=grado'+item.idSolicitud+' name="grado"></span>';
+							trHTML += '<br>Fecha de Diploma: <span id=fecdiploma'+item.idSolicitud+' name="fecdiploma"></span></b>';
+							trHTML += '<br><i>TIPO:</i><ul><li><b>REVALIDADO</b></li></ul>';
+							trHTML += '<ul style="list-style:none"><li><span id=uninom'+item.idSolicitud+' name="uninom"></li>';
+							trHTML += '<li>Fecha de Resolución de Revalida: <span id=fecresolucion'+item.idSolicitud+' name="fecresolucion"></span></li></ul>';
+							dataRevaSiu(item.idSolicitud);
+						}
+					}
+					if (item.nombrePaisExtranjero == 'PARAGUAY') {
+				        trHTML += '<br><small>* Al sólo efecto de la prosecución de otros estudios de post grado y al sólo para el ejercicio de actividades académicas en Universidades de ambas Partes. Dicho reconocimiento no habilita para el ejercicio profesional</small>'
+				    }
+				    if (item.comentarios != '') {
+				        trHTML += '<br><br><small>' + item.comentarios + '</small>';
+				    }
+					trHTML += '</td>';	    
+					trHTML += '<td data-column="Opciones" style="font-size:12px; vertical-align:center; text-align:center;border-color:#044bb1 !important;">';
+
+					trHTML += '<span id='+item.idSolicitud+' onclick="selSolicitudPDFSiu('+ item.idSolicitud +')"; data-balloon="Ver Constancia" class="btn btn-primary btn-md btn-ver"><span class="glyphicon glyphicon-file"></span> </span>';
+					// trHTML += '<span id=emitido'+item.idSolicitud+' style="color:#2fc7f0;display: none;font-weight:bold;"> Emitido</span>';
+					trHTML += '<a id="emitido' + item.idSolicitud + '" href="#" target="_blank" style="color:#2fc7f0; display: none; font-weight: bold; text-decoration: none;">Emitido</a>';
+
+					trHTML += '</td></tr>';
+				}					
+				})
+			$('#finalDataPriv').append(trHTML);
+		}
+	});
+}
+function dataRevaSiu(idSolicitud){
+	$.ajax({
+		url: '/getDataRevaSiu',
+		type: 'POST',
+		dataType: 'json',
+		data: {idSolicitud: idSolicitud},
+	})
+	.done(function(data) {
+		$.each(data, function(i, item) {
+			$('#grado'+idSolicitud).html(item.gradTitu); 
+			$('#uni'+idSolicitud).html(item.uNom); 
+			$('#fecresolucion'+idSolicitud).html(item.resoFec); 
+			$('#fecdiploma'+idSolicitud).html(item.dipFec);
+			$('#uninom'+idSolicitud).html(item.uNom); 	
+		});
+	})
+	.fail(function() {
+		console.log("error reva");
+	})
+	.always(function() {
+		console.log("complete reva");
+	});
+}
+
+selSolicitudPDF = function(ID,PROC){
+	var idSolicitudci = $("#idsolicitudci").val();
+	var txtcicorreo = $("#txtcicorreo").val();
+	$.ajax({
+		url: '/verConstanciaN2',
+		type: 'POST',
+		dataType: 'json',
+		data: {idSolicitudci: idSolicitudci,ID:ID,PROC:PROC,txtcicorreo:txtcicorreo},
+		
+		beforeSend: function(){
+			$('#frmProcessEmisionCI').modal({
+		      backdrop: 'static',
+		      keyboard: false
+		    });  
+		}
+	})
+	.done(function(data) {
+		$("#"+ID).remove();
+		$('#'+ID).attr('disabled','disabled');
+		$('#emitido' + ID).attr('href', data.code);
+		$('#emitido'+ID).css('display','block');
+		window.open("/ci/"+data.name,"_self");	
+		$('#frmProcessEmisionCI').modal('hide');
+		$('#frm_bodySucess_emisionCI').html('La Constancia de Inscripción ha sido emitida correctamente y se ha enviado a su correo electrónico. Revise el correo electrónico: ' + '<span style="color: #3c763d">' + $("#txtcicorreo").val() + '</span>');
+		$('#frm_Success_EmisionCI').modal('show'); 
+		setTimeout(
+		  function() 
+		  {
+			$.ajax({
+				url: '/eliminartemp/'+data.name,
+				type: 'GET',
+			})
+		  }, 2000);				
+	})
+	.fail(function() {
+		console.log("error");
+	})
+	.always(function(data){
+		console.log("complete1");
+	});
+		
+};
+
+
+$(document).on('click','.verConstanciaN',function(){
+	var doc = $(this).data('dni');
+	var nombre_solicitador = $(this).data('nom');
+	var apepat_solicitador = $(this).data('apepat');
+	var apemat_solicitador = $(this).data('apemat');	
+	var grado_solicitador = $(this).data('grado');
+	var institucion_solicitador = $(this).data('univ');
+	var iddoc = $(this).data('id');
+	var proc = $(this).data('valor_proceso');
+	var tipodocumento = $(this).data('tipodocu');
+		
+	$.ajax({
+		url: 'verConstanciaN',
+		type: 'get',
+		dataType: 'json',
+		data: {doc:doc,nombre_solicitador: nombre_solicitador,apepat_solicitador:apepat_solicitador,apemat_solicitador:apemat_solicitador,grado_solicitador:grado_solicitador,institucion_solicitador:institucion_solicitador,iddoc:iddoc,proc:proc,tipodocumento:tipodocumento},			
+	})
+	.done(function(data) {		
+ 		$("#verConstanciaN2FRAME").contents().find("body").html('');
+		var frameSrc = data;		
+		//$('.modal-title').html(nrosolicitud);
+		$('#verConstanciaN2FRAME').attr("src",frameSrc);
+	})
+	.fail(function() {	
+		mensaje();
+	})
+	.always(function() {
+		//console.log("completed ");
+	});
+});
+
+
+
+$(document).on('blur', '#emailusu , #telefonousu,.cantidad', function(event) {
+	event.preventDefault();
+	$('#terminos').removeAttr('checked');
+	$('.pagar').attr("disabled", true);
+});
+
+function limpiar(){
+	$('#doc,#nombre,#docPriv,#codigoPriv').val('').attr('disabled', false);
+	$('#resultado_publica_box,#resultado_privada_box,#detalle_privada_box,.mensajes-especiales,#detalle_privada_box').addClass('hidden');
+	$('#DataTicketGenerados,#DataTramitesAbonados,#table-datos,#finalDataProduct').html('');
+	$('#infosolicitud').css('display', 'none');
+	refrescarCaptcha();
+	$('#doc,#docPriv').focus();
+	$('#imprimir,#imprimirPriv').attr('disabled', true);
+}
+
+
+
+function dibujarPdfDoc(file,idarchivo,rutaarchivo,archivodiploma){
+		if (file != null){
+			var urlPdf = file;
+
+		if(idarchivo == null && rutaarchivo == null && archivodiploma == null )
+		{			
+			urlPdf = urlBase+file;
+		}	
+		else
+		{			
+			urlPdf = "https://documentos.sunedu.gob.pe/documentos/"+file;
+		}		
+		var embed = $('<embed>');
+		embed.attr({
+			type: 'application/pdf',
+			width: '100%',
+			height: '800px',
+			src: urlPdf
+		});
+	} else {
+		var embed = $('<div align="center"><h2>El documento no existe en la base de datos.</h2></div>');
+	}
+
+	return embed;
+	}
+
+
+function dibujarPdfDocextranjero(file,idarchivo,rutaarchivo,archivodiploma){
+
+	
+	if (file != null){
+		var urlPdf = file;
+
+		urlPdf = "https://documentos.sunedu.gob.pe/documentos/"+file;
+		
+		var embed = $('<embed>');
+		embed.attr({
+			type: 'application/pdf',
+			width: '100%',
+			height: '800px',
+			src: urlPdf
+		});
+	} else {
+		var embed = $('<div align="center"><h2>El documento no existe en la base de datos.</h2></div>');
+	}	
+	return embed;
+}
+
+jQuery.extend(jQuery.validator.messages, {
+	required: "Campo obligatorio.",
+	remote: "Por favor, rellena este campo.",
+	email: "Ingrese una dirección de correo válida.",
+	emailusu: " Ingrese una dirección de correo válida.",
+	url: "Por favor, escribe una URL válida.",
+	date: "Por favor, escribe una fecha válida.",
+	dateISO: "Por favor, escribe una fecha (ISO) válida.",
+	number: " Ingrese un número de teléfono válido.",
+	digits: "Por favor, escribe sólo dígitos.",
+	creditcard: "Por favor, escribe un número de tarjeta válido.",
+	equalTo: "Por favor, escribe el mismo valor de nuevo.",
+	accept: "Por favor, escribe un valor con una extensión aceptada.",
+	maxlength: jQuery.validator.format("No ingrese más de {0} caracteres."),
+	minlength: jQuery.validator.format("No ingrese menos de {0} caracteres."),
+	rangelength: jQuery.validator.format("Ingrese un valor entre {0} y {1} caracteres."),
+	range: jQuery.validator.format("Ingrese un número de teléfono válido."),
+	max: jQuery.validator.format("Ingrese un valor menor o igual a {0}."),
+	min: jQuery.validator.format("Ingrese un valor válido.")
+});
+
+$(document).ready(function(){
+	//OTI23
+	$('#myModal').on('show.bs.modal', function(event){
+		$("#panDocEst").html('');
+		var modal = $(this)
+		var button = $(event.relatedTarget);
+		var id = button.data('id');
+		var cuerpo = modal.find('.myModalBody');
+		var titulo = button.data('nombre');
+		var idarchivo = button.data('idarchivo');
+
+		var archivodiploma = button.data('archivodiploma');
+
+
+		if (button.data('get') == 'doc'){
+			modal.find('.modal-title').text(titulo);
+			cuerpo.append(dibujarPdfDoc(id,idarchivo,archivodiploma));
+		}
+	});
+
+	function dibujarPdfDocresolucion(file,procedencia){
+	
+		if (file != null){
+			var urlPdf = file;
+
+			if (procedencia != "E")			
+				urlPdf = urlBase+file;
+			else
+				urlPdf = "https://documentos.sunedu.gob.pe/documentos/"+file;
+			var embed = $('<embed>');
+			embed.attr({
+				type: 'application/pdf',
+				width: '100%',
+				height: '800px',
+				src: urlPdf
+			});
+		} else {
+			var embed = $('<div align="center"><h2>El documento no existe en la base de datos.</h2></div>');
+		}
+		return embed;
+	}
+
+
+	$('#myModalresolucion').on('show.bs.modal', function(event){
+		$("#panDocEstresolucion").html('');
+		var modal = $(this)
+		var button = $(event.relatedTarget);
+		var id = button.data('id');
+		var cuerpo = modal.find('.myModalBody');
+		var titulo = button.data('nombre');
+		var idarchivo = button.data('idarchivo');
+		var procedencia= button.data('proc');
+		var archivodiploma = button.data('archivodiploma');
+
+		if (button.data('get') == 'doc'){
+			modal.find('.modal-title').text(titulo);
+			cuerpo.append(dibujarPdfDocresolucion(id,procedencia));
+		}
+	});
+
+	
+
+
+	$("#myModaldetalle").on("shown.bs.modal", function () {
+		$("body").addClass("modal-open");
+	}).on("hidden", function () {
+		$("body").removeClass("modal-open")
+	});
+
+	$("#consultaFormPriv").validate();
+	$("#consultaForm").validate();
+	$.ajaxSetup({
+		beforeSend	: function(){
+			$('#frmProcess').modal({
+				backdrop: 'static',
+				keyboard: false
+			});
+		}
+	});
+	$(document ).ajaxComplete(function() {
+		$('#frmProcess').modal('hide');
+	});
+	
+	$(document).on('click', 'button[type=reset]', function (e) {
+		limpiar();
+	});
+	$('.pull-down').each(function() {
+		var $this=$(this);
+		$this.css('margin-top', $this.parent().height()-$this.height())
+	});
+	$('#buscar,#buscarPriv').click(function(event) {
+		$('#resultado_publica_box,#resultado_privada_box,#detalle_privada_box').addClass('hidden');
+		$('#finalDataPriv, #DataTicketGenerados, #DataTramitesAbonados, #table-datos, #finalDataProduct').html('');
+		$('#infosolicitud').css('display', 'none');
+	});
+
+	
+/* CONSULTA PUBLICA - VERIFICA SI ESTAS INSCRITO  */
+	$('#buscar').click(function(event) {	
+		$('#mensajefechamatricula').css('display', 'none');
+		$.ajax({
+			url: 'consulta',
+			type: 'POST',
+			dataType: 'json',
+			data: $('#consultaForm').serialize(),
+		})
+		.done(function(data) {	
+			$('#titulofinalData').html('');
+			var trHTMLt = '';
+			trHTMLt = '<tr class="table-success"><th style="border: 1px solid #044bb1 !important;">Graduado</th><th style="border: 1px solid #044bb1 !important;">Grado o Título</th><th style="border: 1px solid #044bb1 !important;">Institución</th><th style="display:none;border: 1px solid #044bb1 !important;" class="cabSolicitar">Solicitar corrección</th></tr>';			
+			$('#titulofinalData').append(trHTMLt);
+			$('#finalData').html('');
+			$('#resultado_publica_box').removeClass('no-print');
+			$('#docPriv,#codigoPriv').val('');
+			$('.closeModalConstancia').addClass('hidden');	
+			if (data.response == 'error'){
+				$('#frmError').modal('toggle');
+				$('#frmError_Body').html('<p>EL código CAPTCHA ingresado no es correcto.</p>')
+			} else if (data == '[]'){
+				var bitserviciosiu = 1;
+				if (bitserviciosiu == 1) { // validamos que este activo el uso del servicio del siu -> config->app
+					/*validamos si en el servicio de extranjeros hay registros*/
+					$.ajax({
+					url: 'consultaExt',
+					type: 'POST',
+					dataType: 'json',
+					data: $('#consultaForm').serialize(),
+					})
+					.done(function(data) {
+						if (data.length > 0) {
+							$('#titulofinalData').html('');
+							var trHTMLt = '';
+							trHTMLt = '<tr class="table-success" style="border: 1px solid #044bb1 !important;"><th style="border: 1px solid #044bb1 !important;">Graduado</th><th style="border: 1px solid #044bb1 !important;">Grado o Título</th><th style="border: 1px solid #044bb1 !important;">Institución</th><th style="display:none; border: 1px solid #044bb1 !important;" class="cabSolicitar">Solicitar corrección</th></tr>';
+							
+							$('#titulofinalData').append(trHTMLt);
+							$('#finalDataExt').html('');
+							var trHTMLExt = '';	
+							$.each(data, function(i, item) {
+								var observaciones = item.observaciones;
+								if (observaciones == null) {
+									observaciones = '';
+								}
+								trHTMLExt += '<tr>';
+								trHTMLExt += '<td data-column="Graduado" style="font-size:12px; vertical-align:center;font-familia:Poppins-bold; color:#044bb1;border: 1px solid #044bb1 !important;">'+ item.persona +'<br><strong>';
+								trHTMLExt +=  item.tipoDocumentoIdentidad+' '+ item.numeroDocumento+'</strong></td>';
+								trHTMLExt += '<td data-column="Grado o Título" style="font-size:12px; vertical-align:left; text-align:left;font-family:Poppins-Medium !important;color:#044bb1;border: 1px solid #044bb1 !important;""><strong>'+ item.denominacionDiploma +'</strong><br>';
+								trHTMLExt += '<b>Fecha de Diploma: '+item.fechaEmisionDiploma+'</b><br>';
+								trHTMLExt += '<i>TIPO:<br>';
+								trHTMLExt += '<ul><li><b>'+item.estadoReconocimiento+'</b></li></ul></i>';
+								if (item.flgResolucionNulidad == 1) {
+									var numresdatos = item.numeroResolucionNulidad;
+									
+									trHTMLExt += '<ul><li style="list-style: none; color: #FF0000;" ><b>'+observaciones+'</b></li></ul>';
+									trHTMLExt += '<ul><li style="list-style: none; color: #FF0000;" >Fecha de Resolución que declara Nulo el Registro:&nbsp' + item.fechaResolucionNulidad + '</li></ul>';
+								}else if (item.idSolicitud == 68084) {
+                                    trHTMLExt += '<ul><li style="list-style: none;" >Fecha de Resolución:&nbsp'+ item.fechaResolucion + '</li></ul>';
+								}else{
+									trHTMLExt += '<ul><li style="list-style: none;" >Fecha de Resolución de Reconocimiento:&nbsp'+ item.fechaResolucion + '</li></ul>';
+								}
+                                if (item.flgResolucionNulidad != 1) {
+									trHTMLExt += '<p style="text-align:justify">'+observaciones+'</p>';
+								}
+								if (item.flgResolucionLesividad == 1) {
+								
+								var numreslesividad = item.numeroResolucionLesividad;
+								//var fechalesividad = item.fechaResolucionLesividad;																
+								trHTMLExt += '<ul><li style="list-style: none; color: #FF0000;" >'+ numreslesividad+'</li>';
+								trHTMLExt += '</ul>';
+								}
+								/* modalidad y duración de estudio*/
+								trHTMLExt += '<br><b>Modalidad de estudios: '+ item.modalidadEstudio+'<br>';
+								trHTMLExt += 'Duración de estudios: '+ item.duracionEstudios+'</b><br><br>';
+								/*--*/
+								/* REVALIDADO */
+								if ( item.numDiplReva != null) {
+									if (item.numDiplReva.length > 0) {
+										trHTMLExt += '<strong><span style="font-size:12px; vertical-align:left; text-align:left"; id=grado'+item.idSolicitud+' name="grado"></span></strong><br>';
+										trHTMLExt += '<b>Fecha de Diploma: <span id=fecdiploma'+item.idSolicitud+' name="fecdiploma"></span></b><br>';
+										trHTMLExt += '<i>TIPO:<br>';
+										trHTMLExt += '<ul><li><b>REVALIDADO</b></li></ul></i>';
+										trHTMLExt += '<ul><li style="list-style:none"><span id=uni'+item.idSolicitud+' name="grado"></span></li>';
+										trHTMLExt += '<li style="list-style:none">Fecha de Resolución de Revalida: <span id=fecresolucion'+item.idSolicitud+' name="fecresolucion"></span></li>';
+										dataRevaSiu(item.idSolicitud);
+									}					
+								}
+								trHTMLExt += '</td>';
+								/*----*/
+								trHTMLExt += '<td data-column="Institución" style="font-size:12px; vertical-align:center;border: 1px solid #044bb1 !important;">';
+								/* Lista de universidades y paises*/
+								var datainstitucion = jQuery.parseJSON(item.entidades);
+								$.each(datainstitucion, function(key, itemdata) 
+								{
+								   
+								   trHTMLExt += '<span style="font-family: Poppins-bold !important;">'+itemdata.UNIVERSIDAD+'</span><br>';
+								   trHTMLExt += '<b><i>'+itemdata.PAIS+'</i></b><br>';
+								});				
+								trHTMLExt += '</td>';
+								trHTMLExt += '<td data-column="Accion" class="cabSolicitar" style="font-size:12px;text-align:center; vertical-align:center;display:none" border: 1px solid #044bb1 !important;></td>';
+								trHTMLExt += '</tr>';
+							})
+							$('#finalDataExt').append(trHTMLExt);	
+							$('#resultado_publica_box').removeClass('hidden');
+							$('#imprimir').attr('disabled',false);
+							$('html,body').animate({scrollTop: $("#resultado_publica_box").offset().top},'slow');
+						}else{
+							
+							var inputdoc=$('#doc').val();
+							var inputnombre=$('#nombre').val();
+							var mensaje = '';
+							if (inputdoc!='') {
+								var mensaje = 'No se encontraron resultados con este número de DNI, intente realizando la búsqueda en el casillero de apellidos y nombres completos';
+							}else{
+								var mensaje = 'No se encontraron resultados con estos apellidos y nombres, intente realizando la búsqueda en el casillero de DNI';
+							}							
+							$('#finalDataExt').html('');			
+							$('#frmError').modal('toggle');
+							$('#frmError_Body').html('<p>'+mensaje+'</p>');
+						}
+					})
+					.fail(function() {
+						$('#finalDataExt').html('');
+					})
+					.always(function() {				
+					});	
+				}else{
+					var inputdoc=$('#doc').val();
+					var inputnombre=$('#nombre').val();
+					var mensaje = '';
+					if (inputdoc!='') {
+						var mensaje = 'No se encontraron resultados con este número de DNI, intente realizando la búsqueda en el casillero de apellidos y nombres completos';
+					}else{
+						var mensaje = 'No se encontraron resultados con estos apellidos y nombres, intente realizando la búsqueda en el casillero de DNI';
+					}
+					$('#frmError').modal('toggle');
+					$('#frmError_Body').html('<p>'+mensaje+'</p>');
+				}				
+				
+			} else {
+				var valor = 1;				
+				var trHTML = '';		
+				$.each($.parseJSON(data), function(i, item) {
+
+				var TIPO = 'N';
+					/* variables desde nacionales siu */
+				var NOMBRE = item.apepat+' '+item.apemat+', '+item.nombre;
+				var DOC_IDENT = item.docuTip+' '+item.docuNum;
+				var DIPL_FEC = item.diplFec;
+				var especialidad = item.especialidad;
+				if (especialidad == null) {
+					especialidad = ''; 
+				}
+				var TITULO_REV = item.gradTitu+'<br>'+especialidad;
+				var MODALIDAD_ESTUDIO = item.modalidad;
+				if (MODALIDAD_ESTUDIO == 'P' || MODALIDAD_ESTUDIO == 'PRESENCIAL') {
+					MODALIDAD_ESTUDIO = 'PRESENCIAL';
+				}else if (MODALIDAD_ESTUDIO == 'S' || MODALIDAD_ESTUDIO == 'SEMI PRESENCIAL' || MODALIDAD_ESTUDIO == 'SEMIPRESENCIAL') {
+					MODALIDAD_ESTUDIO = 'SEMIPRESENCIAL';
+				}else if (MODALIDAD_ESTUDIO == 'D' || MODALIDAD_ESTUDIO == 'DISTANCIA' || MODALIDAD_ESTUDIO == 'A DISTANCIA') {
+					MODALIDAD_ESTUDIO = 'A DISTANCIA';
+				}else{
+					MODALIDAD_ESTUDIO = '-';
+				}
+				var MATRI_FEC = item.matriFec;
+				var TIPO_GRADO = item.codAbreGyt;
+				var PAIS = 'PERU';
+				var EGRES_FEC = item.egresFec;
+				var FLG_RESOLUCION_NULIDAD = item.flgResolucionNulidad;
+				var NRO_RESOLUCION_NULIDAD = item.nroResolucionNulidad;
+				var FECHA_RESOLUCION_NULIDAD =  item.fechaResolucionNulidad;
+				var fecresonulidad =  item.fechaResolucionNulidad;
+				if (FLG_RESOLUCION_NULIDAD == 1 ) {
+					//2021-06-24T00:00:00
+					var aniofecresonuli = fecresonulidad.substr(0,4);
+					var mesfecresonuli = fecresonulidad.substr(5,2);
+					var diafecresonuli = fecresonulidad.substr(8,2);
+					//console.log(aniofecresonuli+'<->'+mesfecresonuli+'<-->'+diafecresonuli);
+					FECHA_RESOLUCION_NULIDAD = diafecresonuli+'/'+mesfecresonuli+'/'+aniofecresonuli;					
+				}
+				var FLG_RESOLUCION_LESIVIDAD = item.flgResolucionLesividad;
+				var NRO_RESOLUCION_LESIVIDAD = item.nroResolucionLesividad;
+				var FECHA_RESOLUCION_LESIVIDAD = item.fechaResolucionLesividad;
+				var fecresonlesividad =  item.fechaResolucionLesividad;
+				if (FLG_RESOLUCION_LESIVIDAD == 1 ) {
+					//2021-06-24T00:00:00
+					var aniofecresolesi = fecresonlesividad.substr(0,4);
+					var mesfecresolesi = fecresonlesividad.substr(5,2);
+					var diafecresolesi = fecresonlesividad.substr(8,2);
+					//console.log(aniofecresonuli+'<->'+mesfecresonuli+'<-->'+diafecresonuli);
+					FECHA_RESOLUCION_LESIVIDAD = diafecresolesi+'/'+mesfecresolesi+'/'+aniofecresolesi;					
+				}
+				var COMENTARIO_NACIONAL = '-';
+				var TIPO_INSCRI =  item.diplTipEmi;
+				if (TIPO_INSCRI == 'DUPLICADO') {
+					TIPO_INSCRI = 'D';
+					var GRADO_REV = '<br><i>TIPO:<ul><li><b> DUPLICADO</b></li></ul></i>';
+				}
+					
+				var ESREVALIDA = item.esRevalida;
+				if (ESREVALIDA == true) {
+					TIPO_INSCRI = 'REVALIDA';
+					var GRADO_REV = '<br><i>TIPO:<ul><li><b> REVÁLIDA</b></li></ul></i>';
+				}
+				var UNIV_NAC = item.universidad;
+				var resoNum = item.resoNum;
+				var UNI_RESO_NUM = item.uniResoNum;
+				var BIT_DOC_ESP = item.bitDocEsp;
+				var RESO_FEC = item.resoFec;
+				var ID = item.idSolicitud;
+				var V_ORIGEN = '';
+					/* DOCTORADO ESPECIAL */
+					var uni='';	
+					var c=0;
+					$.each($.parseJSON(data), function(i, doc) {
+						
+						if (doc.bitDocEsp == "1" && doc.codAbreGyt == "D") {
+							uni = '1.PONTIFICIA UNIVERSIDAD CATÓLICA DEL PERÚ<br>2.UNIVERSIDAD PERUANA CAYETANO HEREDIA<br>3.UNIVERSIDAD DEL PACÍFICO<br>4.UNIVERSIDAD DE LIMA';
+						}else if(doc.bitDocEsp == "1" && doc.codAbreGyt === "B"){
+							uni = '1.PONTIFICIA UNIVERSIDAD CATÓLICA DEL PERÚ<br>2.UNIVERSIDAD PERUANA CAYETANO HEREDIA';
+						}
+					});	 
+					/*********************/	
+					var valreval;					
+					var TIPO_GRADO = item.codAbreGyt;
+					var DIPL_TIP_EMI = item.diplTipEmi;	
+					if (resoNum == UNI_RESO_NUM &&  BIT_DOC_ESP == "1"  && PAIS == 'PERU' ) {
+						trHTML += '<tr>' + 
+						'<td data-column="Graduado" style="font-size:12px; vertical-align:center; font-family:Poppins-Bold !important; color:#044bb1;border:1px solid #044bb1 !important;border: 1px solid #044bb1 !important;">' + NOMBRE + '<br>';
+						if (DOC_IDENT == '- X'){
+							trHTML += '<small>Agradeceremos, comunicarse al correo, <span>actualizaciones@sunedu.gob.pe</span> especificando el asunto <span>"Alerta de página web"</span></small>'
+						} else {
+							trHTML += '<strong>' + DOC_IDENT +'</strong>';
+						}
+						trHTML += '</td>' +
+
+						'<td data-column="Grado o Título" style="font-size:12px; vertical-align:left; text-align:left;font-family:Poppins-Medium !important;color:#044bb1;border: 1px solid #044bb1 !important;""><p style="font-size:12px; vertical-align:left; text-align:left;font-family:Poppins-Bold !important;color:#2fc7f0;">' + 
+							TITULO_REV+'</p><br>';
+							if(TIPO_INSCRI !='R'){
+								var diplfecr = DIPL_FEC;
+								if(diplfecr == null){
+								diplfecr = '';							
+								}
+								trHTML += '<b>Fecha de diploma: '+diplfecr+'</b><br>';
+								trHTML += 'Modalidad de estudios:&nbsp<span>' + MODALIDAD_ESTUDIO + '</span>' + '<br>';
+							}
+							var gradorev = GRADO_REV;
+							if (gradorev != null){
+								trHTML += GRADO_REV;
+							}	
+							if (FLG_RESOLUCION_NULIDAD == 1) {
+								var numresdatos = NRO_RESOLUCION_NULIDAD;
+								trHTML += '<ul><li style="list-style: none; color: #FF0000;" >REGISTRO ANULADO POR RESOLUCIÓN DIRECTORAL N°&nbsp' + numresdatos + '</li>';
+								trHTML += '<li style="list-style: none; color: #FF0000;" >Fecha de Resolución que declara Nulo el Registro:&nbsp' + FECHA_RESOLUCION_NULIDAD + '</li></ul>';
+							}
+							if (FLG_RESOLUCION_LESIVIDAD == 1) {
+								var numreslesividad = NRO_RESOLUCION_LESIVIDAD;
+								var fechalesividad = FECHA_RESOLUCION_LESIVIDAD;														
+								trHTML += '<ul><li style="list-style: none; color: #FF0000;" >SE HA DECLARADO LA LESIVIDAD DE LA INSCRIPCIÓN EN MÉRITO A LA '+ numreslesividad+' DEL '+ fechalesividad+'</li>';
+								trHTML += '</ul>';
+							}
+							var DIPLOMA_FEC = DIPL_FEC;	
+							if(DIPLOMA_FEC == null){
+								DIPLOMA_FEC = 'No aplica';							
+							}
+							if(TIPO_INSCRI =='R'){
+								trHTML += '<ul><li style="list-style: none;" >Fecha de Resolución de Revalida:&nbsp'+ RESO_FEC+'</li>';
+								trHTML += '<li style="list-style: none;" >Fecha de Diploma:&nbsp'+ DIPLOMA_FEC +'</li></ul>'
+							}							
+							if (PAIS == 'PARAGUAY'){
+								trHTML += '<br><small>* Al sólo efecto de la prosecución de otros estudios de post grado y al sólo para el ejercicio de actividades académicas en Universidades de ambas Partes. Dicho reconocimiento no habilita para el ejercicio profesional</small>'
+							}
+							if (COMENTARIO_NACIONAL != '-') {
+								trHTML += '<br><br><small>' + COMENTARIO_NACIONAL + '</small>';
+							}							
+					
+						trHTML += '</td>' +
+										'<td data-column="Institución" style="font-size:12px; vertical-align:center; font-family:Poppins-Medium !important; color:#044bb1; border: 1px solid #044bb1 !important;"><span style="font-family: Poppins-bold !important;">' + uni +'</span>';
+						trHTML += '</br><b><i>' + PAIS + '</i></b>';
+						trHTML += '</td>';
+						trHTML += '<td data-column="Accion" class="btn-sm cabSolicitar" style="font-size:12px; vertical-align:center; text-align:center;display:none;border: 1px solid #044bb1 !important;"><span style="cursor:pointer;color:#044bb1;" class="glyphicon glyphicon-edit  fa-2x" data-id="'+item.idSolicitud+'" data-opcion="PRI" data-proc="'+item.TIPO+'" id="btneditardata" data-toggle="tooltip" data-placement="top" title="Editar"></span></td>'
+												
+						trHTML += '</tr>';	
+					}
+					else if (TIPO_INSCRI == 'RE' && BIT_DOC_ESP != "1"  && PAIS == 'PERU' && item.flagRev != true ){	
+						
+					 var bitserviciosiu	 =1;
+						if (bitserviciosiu === 0) { // validamos que este activo el uso del servicio de seegten -> config->app
+							/* consulta publica extranjeros*/				
+							 if(V_ORIGEN == 'SEEGTEN'){
+							 	fecdiplomaSeegten(item.NUM_ORD_PAG,item.ID);								
+							 }else{								
+							 	fecdiplomaBdanr(item.ID_CERTIFICADO,item.ID);
+							 } 
+							trHTML += '<tr>' + 
+							'<td data-column="Graduado" style="font-size:12px; vertical-align:center; font-family:Poppins-Bold !important; color:#044bb1;border:1px solid #044bb1 !important;">' + NOMBRE + '<br>';
+							if (DOC_IDENT == '- X'){
+								trHTML += '<small>Agradeceremos, comunicarse al correo, <span>actualizaciones@sunedu.gob.pe</span> especificando el asunto <span>"Alerta de página web"</span></small>';
+							} else {
+								trHTML += '<strong>' + DOC_IDENT + '</strong>';
+							}
+							trHTML += '</td>' +
+	 
+							'<td data-column="Grado o Título" style="font-size:12px; vertical-align:left; text-align:left;font-family:Poppins-Medium !important;color:#044bb1;border: 1px solid #044bb1 !important;"">'+item.TITULO_REV+'<br>';
+								if(item.V_ORIGEN == 'SEEGTEN'){								
+									trHTML += 'Fecha Diploma:&nbsp<span id="fechaDiploma'+item.NUM_ORD_PAG+'">';
+								}else{
+									trHTML += 'Fecha Diploma:&nbsp<span id="fechaDiploma'+item.ID_CERTIFICADO+'">';
+								}						
+								
+								trHTML += '</span><br>'+GRADO_REV;							
+								if (item.FLG_RESOLUCION_NULIDAD == 1) {
+									trHTML += '<ul><li style="list-style: none; color: #FF0000;" >Fecha de Resolución que declara Nulo el Registro:&nbsp' + item.FECHA_RESOLUCION_NULIDAD + '</li></ul>';
+								}else{
+									trHTML += '<ul><li style="list-style: none;" >Fecha de Resolución de Reconocimiento:&nbsp'+ RESO_FEC + '</li></ul>';
+								}
+								if (item.FLG_RESOLUCION_LESIVIDAD == 1) {
+									
+									var numreslesividad = item.NRO_RESOLUCION_LESIVIDAD;
+									var fechalesividad = item.FECHA_RESOLUCION_LESIVIDAD;																
+									trHTML += '<ul><li style="list-style: none; color: #FF0000;" >SE HA DECLARADO LA LESIVIDAD DE LA INSCRIPCIÓN EN MÉRITO A LA '+ numreslesividad+' DEL '+ fechalesividad+'</li>';
+									trHTML += '</ul>';
+								}
+
+								if (item.PAIS == 'PARAGUAY' && item.ESSUNEDU == 1){
+									trHTML += '<br><small>* Al sólo efecto de la prosecución de otros estudios de post grado y al sólo para el ejercicio de actividades académicas en Universidades de ambas Partes. Dicho reconocimiento no habilita para el ejercicio profesional</small>';
+								}
+								if (item.COMENTARIO != '-') {
+									trHTML += '<br><br><small>' + item.COMENTARIO + '</small><br>';
+									
+								}							
+								if(item.NUM_DIPL_REVA!= null){							
+									revalida(item.NUM_DIPL_REVA,item.NUM_ORD_PAG);
+										trHTML += '<ul><li><b>REVALIDADO</b> (<b><span id="titulo'+item.NUM_ORD_PAG+'"></span></b>) POR<br>';
+										trHTML += '<b>"<span id="uni'+item.NUM_ORD_PAG+'"></span>"</b> <br>Fecha de Resolución de Revalida: <span id="fechaResolucion'+item.NUM_ORD_PAG+'"></span><br>';
+										trHTML += 'Fecha de Diploma:<span id="fechaExpDiplo'+item.NUM_ORD_PAG+'"></span></li></ul>';							
+								}
+								
+								/*Modalidad estudio  - duracion*/	
+							
+	                            if(item.V_ORIGEN == 'SEEGTEN'){
+	                                    trHTML += 'Modalidad de estudios:&nbsp<span id="spModEstudio'+item.NUM_ORD_PAG+'"></span><br/>';
+	                                    trHTML += 'Duración de estudios:&nbsp<span id="spDuracion'+item.NUM_ORD_PAG+'"></span>';
+	                            }else{
+	                                    trHTML += 'Modalidad de estudios:&nbsp<span>' + MODALIDAD_ESTUDIO + '</span>';
+	                            }
+	                            /* Fecha de matricula y fecha de egreso*/
+	                            if(TIPO_GRADO == 'B' || TIPO_GRADO == 'M'|| TIPO_GRADO == 'D' || TIPO_GRADO == 'S'){
+	                            	var FECMATRI = '';
+	                            	var FECEGRE = ''
+	                            	if (MATRI_FEC === '-') { FECMATRI = 'Sin información (***)';
+	                            		$('#mensajefechamatricula').css('display', 'block');
+	                            	}else { FECMATRI = MATRI_FEC; }
+	                            	if (EGRES_FEC === '-') { FECEGRE = 'Sin información (***)';
+	                            		$('#mensajefechamatricula').css('display', 'block');
+	                            	}else{ FECEGRE = EGRES_FEC;}
+	                            	trHTML += '<br>Fecha matrícula:&nbsp<span>' + FECMATRI + '</span>';
+	                            	trHTML += '<br>Fecha egreso:&nbsp<span>' + FECEGRE + '</span>';
+	                            }
+								
+							trHTML += '</td>' +
+											'<td data-column="Institución" style="font-size:12px; vertical-align:center;border: 1px solid #044bb1 !important;">' + UNIV;
+							trHTML += '</br><b><i>' + PAIS + '</i></b>';
+							trHTML += '</td>';
+
+								if(item.TIPO == 'N'){
+								trHTML += '<td data-column="Accion" class="btn-sm cabSolicitar" style="font-size:12px; vertical-align:center; text-align:center;display:none;border: 1px solid #044bb1 !important;"><span style="cursor:pointer;color:#044bb1;" class="glyphicon glyphicon-edit  fa-2x" data-id="'+item.ID+'" data-opcion="PRI" data-proc="'+item.TIPO+'" id="btneditardata" data-toggle="tooltip" data-placement="top" title="Editar"></span></td>';
+								}else{									
+									trHTML += '<td data-column="Accion" class="cabSolicitar" style="font-size:12px;text-align:center; vertical-align:center;display:none;border: 1px solid #044bb1 !important;" ></td>';
+									trHTML += '<td data-column="Accion" class="cabSolicitar" style="font-size:12px; vertical-align:center;display:none" ></td>';	
+								}						
+							trHTML += '</tr>';	
+						}
+						//consulta para extranjeros 
+						if (bitserviciosiu == 1) { // validamos que este activo el uso del servicio del siu -> config->app							
+							$.ajax({
+								url: 'consultaExt',
+								type: 'POST',
+								dataType: 'json',
+								data: $('#consultaForm').serialize(),
+							})
+							.done(function(data) {
+								$('#finalDataExt').html('');
+								var trHTMLExt = '';	
+								$.each(data, function(i, item) {
+									var observaciones = item.observaciones;
+									if (observaciones == null) {
+										observaciones = '';
+									}
+									trHTMLExt += '<tr>';
+									trHTMLExt += '<td data-column="Graduado" style="font-size:12px; vertical-align:center;width: 25%;border: 1px solid #044bb1 !important;">'+ item.persona +'<br><strong>';
+									trHTMLExt +=  item.tipoDocumentoIdentidad+' '+ item.numeroDocumento+'</strong></td>';
+									trHTMLExt += '<td data-column="Grado o Título" style="font-size:12px; vertical-align:left; text-align:left;font-family:Poppins-Medium !important;color:#044bb1;border: 1px solid #044bb1 !important;""><strong>'+ item.denominacionDiploma +'</strong><br><b>Fecha de Diploma:'+item.fechaEmisionDiploma+'</b><br>';
+									trHTMLExt += '<i>TIPO:<br>';								
+									
+									if (item.flgResolucionNulidad == 1) {
+										var numresdatos = item.numeroResolucionNulidad;										
+										trHTMLExt += '<ul><li style="list-style: none; color: #FF0000;" ><b>REGISTRO ANULADO POR&nbsp' + numresdatos + '</b></li></ul>';
+										trHTMLExt += '<ul><li style="list-style: none; color: #FF0000;" >Fecha de Resolución que declara Nulo el Registro:&nbsp' + item.fechaResolucionNulidad + '</li></ul>';
+									}else if (item.idSolicitud == 68084) {
+                                        trHTMLExt += '<ul><li style="list-style: none;" >Fecha de Resolución:&nbsp'+ item.fechaResolucion + '</li></ul>';
+									}else{
+										trHTMLExt += '<ul><li style="list-style: none;" >Fecha de Resolución de Reconocimiento:&nbsp'+ item.fechaResolucion + '</li></ul>';
+									}
+										trHTMLExt += observaciones;
+									if (item.flgResolucionLesividad == 1) {
+								
+										var numreslesividad = item.numeroResolucionLesividad;
+										//var fechalesividad = item.fechaResolucionLesividad;															
+										trHTMLExt += '<ul><li style="list-style: none; color: #FF0000;" >'+ numreslesividad+'</li>';
+										trHTMLExt += '</ul>';
+									}
+									
+									if ( item.numDiplReva != null) {
+										if (item.numDiplReva.length > 0) {
+										trHTMLExt += '<b>REVALIDADO</b> (<span id=grado'+item.idSolicitud+' name="grado"></span>) POR <span id=uni'+item.idSolicitud+' name="grado"></span>';
+										trHTMLExt += '<br>Fecha de Resolución de Revalida: <span id=fecresolucion'+item.idSolicitud+' name="fecresolucion"></span>';
+										trHTMLExt += '<br><b> Fecha de Diploma: <span id=fecdiploma'+item.idSolicitud+' name="fecdiploma"></span></b><br>';
+										dataRevaSiu(item.idSolicitud);
+										}
+										
+									}
+									/* modadlidad y duración de estudio*/
+									trHTMLExt += '<br>Modalidad de estudios:  <strong>'+ item.modalidadEstudio+'</strong><br>';
+									trHTMLExt += 'Duración de estudios: <strong>'+ item.duracionEstudios+'</strong>';
+									trHTMLExt += '</td>';
+									trHTMLExt += '<td data-column="Institución" style="font-size:12px; vertical-align:center;width: 32%;border: 1px solid #044bb1 !important;">'+ item.nombreEntidad+'<br><b><i>'+item.nombrePaisExtranjero+'</i></b></td>';									
+									trHTMLExt += '<td data-column="Accion" class="cabSolicitar" style="font-size:12px;text-align:center; vertical-align:center;display:none;border: 1px solid #044bb1 !important;" ></td>';
+									trHTMLExt += '</tr>';
+								})
+								$('#finalDataExt').append(trHTMLExt);				
+							})
+							.fail(function() {				
+								$('#finalDataExt').html('');
+							})
+							.always(function() {				
+								//console.log("complete E2");
+							});	
+						}	
+					}					
+					else if(TIPO_INSCRI !='RE' && BIT_DOC_ESP != "1"  && PAIS == 'PERU' && item.flagRev != true){	
+						//GRADOS NACIONALES BACHIILLER, TITULO ETC
+						//if (item.TIPO_INSCRI != 'R') {			
+						trHTML += '<tr>' + 
+						'<td data-column="Graduado" style="font-size:12px; vertical-align:center; font-family:Poppins-Bold !important; color:#044bb1;border: 1px solid #044bb1 !important;">' + NOMBRE + '<br>';
+						if (DOC_IDENT == '- X' || DOC_IDENT == '-' || DOC_IDENT == ''){
+							trHTML += '<small>Agradeceremos, comunicarse al correo, <span>actualizaciones@sunedu.gob.pe</span> especificando el asunto <span>"Alerta de página web"</span></small>'
+						} else {
+							trHTML += '<strong>' + DOC_IDENT +'</strong>';
+						}
+						trHTML += '</td>' +
+						'<td data-column="Grado o Título" style="font-size:12px; vertical-align:left; text-align:left;font-family:Poppins-Medium !important;color:#044bb1;border: 1px solid #044bb1 !important;"><b>' + 
+
+							'<p style="font-size:12px; vertical-align:left; text-align:left;font-family:Poppins-Bold !important;color:#2fc7f0;">'+TITULO_REV+'</p><br></b>';
+							if(TIPO_INSCRI !='R'){
+								var diplfecr = DIPL_FEC;
+								if(diplfecr == null){
+									diplfecr = '';							
+								}
+								trHTML += '<b>Fecha de diploma: '+diplfecr+'</b><br>';
+								trHTML += 'Modalidad de estudios:&nbsp<span>' + MODALIDAD_ESTUDIO + '</span>' + '<br>';
+							}
+							var gradorev = GRADO_REV;
+							if (gradorev != null){
+								trHTML += GRADO_REV;
+							}	
+							if (FLG_RESOLUCION_NULIDAD == 1) {
+								var numresdatos = NRO_RESOLUCION_NULIDAD;
+								var numresdatos = numresdatos.slice(13);								
+								
+								trHTML += '<ul><li style="list-style: none; color: #FF0000;" ><b>REGISTRO ANULADO POR RESOLUCIÓN DIRECTORAL N° &nbsp' + numresdatos + '</li>';
+								trHTML += '<li style="list-style: none; color: #FF0000;" >Fecha de Resolución que declara Nulo el Registro:&nbsp' + FECHA_RESOLUCION_NULIDAD + '</b></li></ul>';
+							}
+							if (FLG_RESOLUCION_LESIVIDAD == 1) {								
+								var numreslesividad = NRO_RESOLUCION_LESIVIDAD;
+								var fechalesividad = FECHA_RESOLUCION_LESIVIDAD;																
+								trHTML += '<ul><li style="list-style: none; color: #FF0000;" >SE HA DECLARADO LA LESIVIDAD DE LA INSCRIPCIÓN EN MÉRITO A LA '+ numreslesividad+' DEL '+ fechalesividad+'</li>';
+								trHTML += '</ul>';
+							}
+							var DIPLOMA_FEC = DIPL_FEC;	
+							if(DIPLOMA_FEC == null){
+								DIPLOMA_FEC = 'No aplica';							
+							}
+							if(TIPO_INSCRI =='R'){
+								trHTML += '<ul><li style="list-style: none;" >Fecha de Resolución de Revalida:&nbsp'+ RESO_FEC+'</li>';
+								trHTML += '<li style="list-style: none;" >Fecha de Diploma:&nbsp'+ DIPLOMA_FEC +'</li></ul>'
+							}							
+							if (PAIS == 'PARAGUAY'){
+								trHTML += '<br><small>* Al sólo efecto de la prosecución de otros estudios de post grado y al sólo para el ejercicio de actividades académicas en Universidades de ambas Partes. Dicho reconocimiento no habilita para el ejercicio profesional</small>'
+							}
+	                           /* Fecha de matricula y fecha de egreso*/
+	                            if(TIPO_GRADO == 'B' || TIPO_GRADO == 'M'|| TIPO_GRADO == 'D' || TIPO_GRADO == 'S'){
+	                            	var FECMATRI = '';
+	                            	var FECEGRE = ''
+	                            	if (MATRI_FEC === '-' || MATRI_FEC === '') { FECMATRI = 'Sin información (***)';
+	                            		$('#mensajefechamatricula').css('display', 'block');
+	                            	}else { FECMATRI = MATRI_FEC; }
+	                            	if (EGRES_FEC === '-' || EGRES_FEC === '') { FECEGRE = 'Sin información (***)';
+	                            		$('#mensajefechamatricula').css('display', 'block');
+	                            	}else{ FECEGRE = EGRES_FEC;}
+	                            	trHTML += '<br>Fecha matrícula:&nbsp<span>' + FECMATRI + '</span>';
+	                            	trHTML += '<br>Fecha egreso:&nbsp<span>' + FECEGRE + '</span>';
+	                            }
+							if (COMENTARIO_NACIONAL != '-') {
+								trHTML += '<br><br><small>' + COMENTARIO_NACIONAL + '</small>';
+							}
+						trHTML += '</td>' +
+						'<td data-column="Institución" style="font-size:12px; vertical-align:center;font-family:Poppins-Medium !important;color:#044bb1;border: 1px solid #044bb1 !important;"><span style="font-family: Poppins-bold !important;">' + UNIV_NAC+'</span>';
+						trHTML += '</br><b><i>' + PAIS + '</i></b>';
+						trHTML += '</td>';
+						
+							if(TIPO == 'N'){
+							trHTML += '<td data-column="Accion" class="btn-sm cabSolicitar" style="font-size:12px; vertical-align:center; text-align:center;display:none;border: 1px solid #044bb1 !important;"><span style="cursor:pointer;color:#044bb1;" class="glyphicon glyphicon-edit  fa-2x" data-id="'+item.idSolicitud+'" data-opcion="PRI" data-proc="'+TIPO+'" id="btneditardata" data-toggle="tooltip" data-placement="top" title="Editar"></span></td>'
+							}else{
+								trHTML += '<td data-column="Accion" class="cabSolicitar" style="font-size:12px; vertical-align:center;display:none;border: 1px solid #044bb1 !important;" data-id="'+item.idSolicitud+'" data-opcion="PRI" data-proc="'+TIPO+'"></span></td>';	
+							}						
+						trHTML += '</tr>';
+					//}
+					}
+						else if(item.TIPO_INSCRI !='RE' && item.TIPO_INSCRI !='O' && item.BIT_DOC_ESP != "1" && PAIS == 'PERU'  && item.flagRev != true){
+							
+							 var bitserviciosiu	 =1;
+							//consulta para extranjeros 
+							if (bitserviciosiu == 1){ // validamos que este activo el uso del servicio del siu -> config->app
+								$.ajax({
+									url: 'consultaExt',
+									type: 'POST',
+									dataType: 'json',
+									data: $('#consultaForm').serialize(),
+								})
+								.done(function(data) {
+									$('#finalDataExt').html('');
+									var trHTMLExt = '';	
+									$.each(data, function(i, item) {
+										trHTMLExt += '<tr>';
+										trHTMLExt += '<td data-column="Graduado" style="style="font-size:12px; vertical-align:center;width: 25%; font-familia:Poppins-bold; color:#044bb1;border: 1px solid #044bb1 !important;">'+ item.persona +'<br><strong>';
+										trHTMLExt +=  item.tipoDocumentoIdentidad+' '+ item.numeroDocumento+'</strong></td>';
+										trHTMLExt += '<td data-column="Grado o Título" style="font-size:12px; vertical-align:left; text-align:left;border: 1px solid #044bb1 !important;"><strong>'+ item.denominacionDiploma +'</strong><br>Fecha de Diploma:'+item.fechaEmisionDiploma+'<br>';
+										trHTMLExt += '<i>TIPO:<br>';
+										if (item.idSolicitud == 26378 || item.idSolicitud == 30522 || item.idSolicitud == 304  || item.idSolicitud == 60764 || item.idSolicitud == 17366 || item.idSolicitud ==68477 || item.idSolicitud == 70139  || item.idSolicitud == 85667 || item.idSolicitud == 86474) {
+                                            trHTMLExt += '<ul><li><b>RECONOCIMIENTO SOLO PARA EL EJERCICIO DE LA DOCENCIA UNIVERSITARIA E INVESTIGACIÓN</b></li></ul></i>';
+                                        }else if (item.idSolicitud == 68084) {
+                                            trHTMLExt += '<ul><li><b>CERTIFICACIÓN</b></li></ul></i>';
+                                        }
+                                        else{
+                                        	trHTMLExt += '<ul><li><b>RECONOCIMIENTO</b></li></ul></i>';                                            
+                                        }
+										if (item.flgResolucionNulidad == 1) {
+											var numresdatos = item.numeroResolucionNulidad;
+											
+											trHTMLExt += '<ul><li style="list-style: none; color: #FF0000;" ><b>REGISTRO ANULADO POR&nbsp' + numresdatos + '</b></li></ul>';
+											trHTMLExt += '<ul><li style="list-style: none; color: #FF0000;" >Fecha de Resolución que declara Nulo el Registro:&nbsp' + item.fechaResolucionNulidad + '</li></ul>';
+										}else if(item.idSolicitud == 68084){
+                                            trHTMLExt += '<ul><li style="list-style: none;" >Fecha de Resolución:&nbsp'+ item.fechaResolucion + '</li></ul>';
+										}else{
+											trHTMLExt += '<ul><li style="list-style: none;" >Fecha de Resolución de Reconocimiento:&nbsp'+ item.fechaResolucion + '</li></ul>';
+										}
+										
+										if ( item.numDiplReva != null) {
+											if (item.numDiplReva.length > 0) {
+											trHTMLExt += '<b>REVALIDADO</b> (<span id=grado'+item.idSolicitud+' name="grado"></span>) POR <span id=uni'+item.idSolicitud+' name="grado"></span>';
+											trHTMLExt += '<br>Fecha de Resolución de Revalida: <span id=fecresolucion'+item.idSolicitud+' name="fecresolucion"></span>';
+											trHTMLExt += '<br>Fecha de Diploma: <span id=fecdiploma'+item.idSolicitud+' name="fecdiploma"></span><br>';
+											dataRevaSiu(item.idSolicitud);
+											}
+											
+										}
+										/* modadlidad y duración de estudio*/
+										trHTMLExt += 'Modalidad de estudios: <strong>'+ item.modalidadEstudio+'</strong><br>';
+										trHTMLExt += 'Duración de estudios:<strong>'+ item.duracionEstudios+'</strong>';
+										trHTMLExt += '</td>';
+										trHTMLExt += '<td data-column="Institución" style="font-size:12px; vertical-align:center;width: 32%;border: 1px solid #044bb1 !important;"><span style="font-family: Poppins-bold !important;">'+ item.nombreEntidad+'</span><br><b><i>'+item.nombrePaisExtranjero+'</i></b></td>';
+										
+										trHTMLExt += '<td data-column="Accion" class="cabSolicitar" style="font-size:12px;text-align:center; vertical-align:center;display:none;border: 1px solid #044bb1 !important;" ></td>';
+										trHTMLExt += '</tr>';
+									})
+									$('#finalDataExt').append(trHTMLExt);				
+								})
+								.fail(function() {				
+									$('#finalDataExt').html('');
+								})
+								.always(function() {				
+									//console.log("complete E2");
+								});	
+							}
+						}					
+
+					$('.mensajes-especiales').removeClass('hidden');
+				});
+				
+				var dataPublica =  $('#consultaForm').serialize();
+				consultaPublicaSiu(dataPublica,valor);
+
+				$('#finalData').append(trHTML);
+				$('#resultado_publica_box').removeClass('hidden');
+				$('#imprimir').attr('disabled',false);
+				$('html,body').animate({scrollTop: $("#resultado_publica_box").offset().top},'slow');
+			}
+		})
+		.fail(function() {
+			mensaje();
+			console.log("error");
+		})
+		.always(function() {
+			verefrescarCaptcha();
+			$('.closeModalConstancia').removeClass('hidden');	
+		});
+		 		
+	});
+
+function consultaPublicaSiu(data,valor){
+	$.ajax({
+	url: 'consultaExt',
+	type: 'POST',
+	dataType: 'json',
+	data: data,
+	})
+	.done(function(data) {
+		if (data.length > 0 ) {		
+			$('#titulofinalData').html('');
+			var trHTMLt = '';
+			trHTMLt = '<tr class="table-success"><th style="border: 1px solid #044bb1 !important;"> Graduado</th><th style="border: 1px solid #044bb1 !important;">Grado o Título</th><th style="border: 1px solid #044bb1 !important;">Institución</th><th style="display:none;border: 1px solid #044bb1 !important;" class="cabSolicitar">Solicitar corrección</th></tr>';
+			
+			$('#titulofinalData').append(trHTMLt);
+			$('#finalDataExt').html('');
+			var trHTMLExt = '';	
+			$.each(data, function(i, item) {
+				var observaciones = item.observaciones;
+				if (observaciones == null) {
+					observaciones = '';
+				}
+				trHTMLExt += '<tr>';
+				trHTMLExt += '<td data-column="Graduado" style="font-size:12px; vertical-align:center; font-family:Poppins-Bold !important; color:#044bb1;border: 1px solid #044bb1 !important;">'+ item.persona +'<br>'+ item.tipoDocumentoIdentidad+'  '+ item.numeroDocumento+'</td>';
+				trHTMLExt += '<td data-column="Grado o Título" style="font-size:12px; vertical-align:left; text-align:left;font-family:Poppins-Medium !important; color:#044bb1;border:1px solid #044bb1 !important;"><p style="font-size:12px; vertical-align:left; text-align:left;font-family:Poppins-Bold !important;color:#2fc7f0;">'+item.denominacionDiploma +'</p><br>';
+				trHTMLExt += '<b>Fecha de Diploma: '+item.fechaEmisionDiploma+'</b><br>';
+				trHTMLExt += '<i>TIPO:<br>';
+				trHTMLExt += '<ul><li><b>'+item.estadoReconocimiento+'</b></li></ul></i>';
+				if (item.flgResolucionNulidad == 1) {
+					var numresdatos = item.numeroResolucionNulidad;								
+					trHTMLExt += '<ul><li style="list-style: none; color: #FF0000;" ><b>'+observaciones+'</b></li></ul>';
+					trHTMLExt += '<ul><li style="list-style: none; color: #FF0000;" >Fecha de Resolución que declara Nulo el Registro:&nbsp' + item.fechaResolucionNulidad + '</li></ul>';
+				}else if (item.idSolicitud == 68084) {
+                    trHTMLExt += '<ul><li style="list-style: none;" >Fecha de Resolución:&nbsp'+ item.fechaResolucion + '</li></ul>'
+				}else{
+					trHTMLExt += '<ul><li style="list-style: none;" >Fecha de Resolución de Reconocimiento:&nbsp'+ item.fechaResolucion + '</li></ul>';
+				}
+				if (item.flgResolucionNulidad != 1) {
+					trHTMLExt += '<p style="text-align:justify">'+observaciones+'</p>';
+				}
+				if (item.flgResolucionLesividad == 1) {
+								
+					var numreslesividad = item.numeroResolucionLesividad;																
+					trHTMLExt += '<ul><li style="list-style: none; color: #FF0000;" >'+ numreslesividad+'</li>';
+					trHTMLExt += '</ul>';
+				}
+				/* modalidad y duración de estudio*/
+				trHTMLExt += '<br><b>Modalidad de estudios: '+ item.modalidadEstudio+'<br>';
+				trHTMLExt += 'Duración de estudios: '+ item.duracionEstudios+'</b><br><br>';
+				/*--*/
+				/* REVALIDADO */
+				if ( item.numDiplReva != null) {
+					if (item.numDiplReva.length > 0) {
+						trHTMLExt += '<strong><span style="font-size:12px; vertical-align:left; text-align:left"; id=grado'+item.idSolicitud+' name="grado"></span></strong><br>';
+						trHTMLExt += '<b>Fecha de Diploma: <span id=fecdiploma'+item.idSolicitud+' name="fecdiploma"></span></b><br>';
+						trHTMLExt += '<i>TIPO:<br>';
+						trHTMLExt += '<ul><li><b>REVALIDADO</b></li></ul></i>';
+						trHTMLExt += '<ul><li style="list-style:none"><span id=uni'+item.idSolicitud+' name="grado"></span></li>';
+						trHTMLExt += '<li style="list-style:none">Fecha de Resolución de Revalida: <span id=fecresolucion'+item.idSolicitud+' name="fecresolucion"></span></li>';
+						dataRevaSiu(item.idSolicitud);
+					}					
+				}
+				trHTMLExt += '</td>';
+				/*----*/
+				trHTMLExt += '<td data-column="Institución" style="font-size:12px; vertical-align:center;font-family:Poppins-Medium !important; color:#044bb1;border:1px solid #044bb1 !important;">';
+				/* Lista de universidades y paises*/
+				var datainstitucion = jQuery.parseJSON(item.entidades);
+				$.each(datainstitucion, function(key, itemdata) 
+				{				   
+				   trHTMLExt += '<span style="font-family: Poppins-bold !important;">'+itemdata.UNIVERSIDAD+'</span><br>';
+				   trHTMLExt += '<b><i>'+itemdata.PAIS+'</i></b><br>';
+				});
+				trHTMLExt += '</td>';
+				trHTMLExt += '<td data-column="Accion" class="cabSolicitar" style="font-size:12px;text-align:center; vertical-align:center;display:none;border:1px solid #044bb1 !important;" ></td>';
+				trHTMLExt += '</tr>';
+			})
+			$('#finalDataExt').append(trHTMLExt);	
+			$('#resultado_publica_box').removeClass('hidden');
+			$('#imprimir').attr('disabled',false);
+			$('html,body').animate({scrollTop: $("#resultado_publica_box").offset().top},'slow');
+		}else{
+			
+			if(valor != 1){
+				var inputdoc=$('#doc').val();
+				var inputnombre=$('#nombre').val();
+				var mensaje = '';
+				if (inputdoc!='') {
+					var mensaje = 'No se encontraron resultados con este número de DNI, intente realizando la búsqueda en el casillero de apellidos y nombres completos';
+				}else{
+					var mensaje = 'No se encontraron resultados con estos apellidos y nombres, intente realizando la búsqueda en el casillero de DNI';
+				}
+				$('#frmError').modal('toggle');
+				$('#frmError_Body').html('<p>'+mensaje+'</p>');
+			}else{
+				$('#finalDataExt').html('');
+			}
+		}
+	})
+	.fail(function() {
+		$('#finalDataExt').html('');
+	})
+	.always(function() {			
+	});	
+}
+
+function revalida(id,id_certi){	
+	$.ajax({
+		url: 'getDataReva',		
+		type: 'POST',
+		dataType: 'json',
+		data: {id:id}		
+	})
+	.done(function(data) {
+		$.each(data,function(index, el) {	
+			
+			if(el.DIPL_FEC == null){
+				el.DIPL_FEC = 'No aplica';
+			}
+			$("#titulo"+id_certi).html(el.GRAD_TITU);	
+			$("#uni"+id_certi).html(el.U_NOM);
+			$("#fechaResolucion"+id_certi).html(el.RESO_FEC);	
+			$("#id"+id_certi).html(el.ID);
+			$("#fechaExpDiplo"+id_certi).html(el.DIPL_FEC);
+		});	
+	});	
+}
+
+function CalculateDiff(ini, fin) {
+	if(ini != null && fin != null){
+
+		ini = ini.split("/").reverse().join("-");
+		fin = fin.split("/").reverse().join("-");
+ 
+		var From_date = new Date(ini);
+		var To_date = new Date(fin);
+		var diff_date =  To_date - From_date;
+		 
+		var years = Math.floor(diff_date/31536000000);
+		var months = Math.floor((diff_date % 31536000000)/2628000000);
+		var days = Math.floor(((diff_date % 31536000000) % 2628000000)/86400000);
+
+		let durTiempo = '';
+
+		if (years > 0) {
+			durTiempo += years;
+			if (years == 1) {
+				durTiempo += ' Año ';
+			}else{
+				durTiempo += ' Años ';
+			}
+		}
+		if (months > 0) {
+			durTiempo += months;
+			if (months == 1) {
+				durTiempo += ' Mes ';
+			}else{
+				durTiempo += ' Meses ';
+			}
+		}
+		if (days > 0) {
+			durTiempo += days;
+			if (days == 1) {
+				durTiempo += ' Día ';
+			}else{
+				durTiempo += ' Días ';
+			}
+		}
+
+		return durTiempo;
+	}
+	else{
+	    return '-';
+	}
+};
+
+function fecdiplomaSeegten(id,idregistro){
+	$.ajax({
+		url: 'getFecDiplomaSeegten',
+		type: 'POST',
+		dataType: 'json',
+		data: {id:id}
+	})
+	.done(function(data) {
+		
+		$.each(data,function(index, el) {
+			if(el.FEC_DIPLOMA == null){
+				el.FEC_DIPLOMA = 'No aplica';
+			}
+
+			if (el.MODALIDAD_ESTUDIO == null) {
+				el.MODALIDAD_ESTUDIO = '-'
+			}
+
+			let dur = CalculateDiff(el.DUR_FEC_INICIO, el.DUR_FEC_FIN);
+			
+			$("#fechaDiploma"+id).html(el.FEC_DIPLOMA);
+			$("#spModEstudio"+id).html(el.MODALIDAD_ESTUDIO);
+			$("#spDuracion"+id).html(dur);
+		});	
+	});	
+}
+function fecdiplomaBdanr(id,idregistro){
+	$.ajax({
+		url: 'getFecDiplomaBdanr',		
+		type: 'POST',
+		dataType: 'json',
+		data: {id:id}		
+	})
+	.done(function(data) {	
+		$.each(data,function(index, el) {		
+			$("#fechaDiploma"+idregistro).html(el.DIPL_FEC);			
+		});	
+	});
+}
+$(document).on('click', '#ticket-tab', function(event) {
+	event.preventDefault();
+	cargarOrdenes();
+});
+
+$(document).on('click', '#tramites-tab', function(event) {
+	event.preventDefault();
+	tramitesAbonados();
+});
+
+$(document).on('click','.btn-ver',function(){
+	var id = $(this).data('idxconstancia');
+	var email = $(this).data('email');
+	var nombreusuario = $(this).data('nombreusuario');
+	var constancia = $(this).data('constancia');
+
+	$('#idxconstancia').val(id);
+	$('#email').val(email);
+	$('#nombreusuario').val(nombreusuario);
+	$('#constancia').val(constancia);
+});
+
+$('#buscarPriv').click(function(event) {
+	$('#infosolicitud').css('display', 'none');
+	$('#doc,#nombre').val('');
+	$('#finalDataProduct').append('<tr class="nada"><td colspan="6">No se encontraron nuevas ordenes de compra</td></tr>');
+	if ($('#docPriv').val() != '' && $('#codigoPriv').val() != ''){
+		cargarDiplomas();		
+	} else {
+		$('#frmError').modal('toggle');
+		$('#frmError_Body').html('<p>No se ingresó un campo obligatorio.</p>')
+	}
+});
+
+$(document).on('click','#imprimirorden',function(){
+	idxconstancia = $(this).data('idxconstancia');
+
+	$.ajax({
+		url: 'actualizarordenfechas',
+		type: 'POST',
+		dataType: 'json',
+		data: {idxconstancia: idxconstancia},			
+	})
+	.done(function(data) {
+		$.each(data,function(index, el) {
+			$('.constancia_'+idxconstancia).html(el.NUM_CONSTANCIA);
+			$('.fecha_'+idxconstancia).html('<span style="font-size:11px"><strong>Inicio:</strong><br>'+el.fechainicial+'<br><strong>Final:</strong><br>'+el.fechafinal+'</span>');	
+		});				
+	})
+	.fail(function() {
+		console.log("error");
+		mensaje();
+    	})
+	.always(function() {
+		console.log("complete");
+	});
+
+});
+$("#doc").on('keyup',function(e){if(!$.trim(this.value).length){$('#nombre').attr('disabled', false);} else {$('#nombre').attr('disabled', true).val('');}});
+$("#nombre").on('keyup',function(e){if(!$.trim(this.value).length){$('#doc').attr('disabled', false);} else {$('#doc').attr('disabled', true).val('');}});
+$(document).on('click','.detalleBtn',function(){
+	id = $(this).data('dni');
+	dni = $(this).data('datadni');
+	doctesp = $(this).data('doctesp');
+	var codigo = $(this).data('codigo');
+	var UNI_RESO_NUM = $(this).data('uni_reso_num');
+	var direcDoct =[];
+	window.scrollTo(0,0);
+	
+	$('#myModaldetalle').modal('show');
+	$.ajax({
+		url: 'agregarlocalizaciondetalle',
+		type: 'POST',
+		dataType: 'json',
+		context : this,
+		data: {dni: dni,id_grado:id},
+	})
+	.done(function(data) {
+		//$('html,body').animate({scrollTop: 0},'fast');
+		id = $(this).data('dni');
+		codigo = $(this).data('codigo');
+		opcion = $(this).data('opcion');
+		proc = $(this).data('proc');
+		ca = $(this).data('ca');
+		tk = $('#token').val();
+		
+		$.ajax({
+			url: 'consulta',
+			type: 'POST',
+			dataType: 'json',
+			context : this,
+			data: {id: id, codigo:codigo, opcion:opcion, proc:proc, ca:ca, _token:tk},
+		})
+		.done(function(data) {			
+			var trHTML = '';
+			$('#detalleBox').html(trHTML);
+			$.each($.parseJSON(data), function(i, item) {				
+				if (proc == 'E'){
+					var d = new Date(item.RESO_FEC);
+					var n = d.toLocaleDateString();
+					trHTML += '<tr><td><strong>Tipo de documento de identidad:</strong> </td><td>'+item.DOCU_TIP + '</td></tr><tr><td><strong>Número de documento:</strong></td><td>' + item.DOCU_NUM + '</td></tr><tr><td><strong>Apellidos:</strong> </td><td>' + item.APEPAT + ' ' + item.APEMAT + '</td></tr><tr><td><strong>Nombres:</strong> </td><td> ' + item.NOMBRE + '</td></tr><tr><td><strong>Grado/Título:</strong></td><td> ' + item.GRAD_TITU + '</td></tr><tr><td><strong>Especialidad/Mención:</strong></td><td> ' + item.ESPECIALIDAD + '</td></tr><tr><td><strong>Tipo de Graduación:</strong></td><td>Reconocimiento</td></tr><tr><td><strong>Número de Resolución:</strong></td><td> ' + item.RESO_NUM + '</td></tr><tr><td><strong>Fecha de Resolución:</strong></td><td>'+n+'</td></tr><tr><td><strong>Nombre de Institución:</strong></td><td> ' + item.U_NOM + '</td></tr><tr><td><strong>País:</strong></td><td>'+item.PAIS+'</td></tr>';
+				} else if (proc == 'R'){
+					var d = new Date(item.RESO_FEC);
+					var n = d.toLocaleDateString();
+					trHTML += '<tr><td><strong>Tipo de documento de identidad:</strong> </td><td>'+item.DOCU_TIP + '</td></tr><tr><td><strong>Número de documento:</strong></td><td>' + item.DOCU_NUM + '</td></tr><tr><td><strong>Apellidos:</strong> </td><td>' + item.APEPAT + ' ' + item.APEMAT + '</td></tr><tr><td><strong>Nombres:</strong> </td><td> ' + item.NOMBRE + '</td></tr><tr><td><strong>Grado/Título:</strong></td><td> ' + item.GRAD_TITU + '</td></tr><tr><td><strong>Especialidad/Mención:</strong></td><td> ' + item.ESPECIALIDAD + '</td></tr><tr><td><strong>Tipo de Graduación:</strong></td><td>Reconocimiento</td></tr><tr><td><strong>Número de Resolución:</strong></td><td> ' + item.RESO_NUM + '</td></tr><tr><td><strong>Fecha de Resolución:</strong></td><td>'+n+'</td></tr><tr><td><strong>Nombre de Institución:</strong></td><td> ' + item.U_NOM + '</td></tr><tr><td><strong>País:</strong></td><td>'+item.PAIS+'</td></tr>';
+				} else if (proc == 'N'){		
+					if(item.BIT_DOC_ESP === '1'){		
+						var unidoc = $('#unidoctoradoespecial').val();
+						unidoc=unidoc.replaceAll(',','');						
+						var rectordoctoradoespecial = $('#rectordoctoradoespecial').val();
+						rectordoctoradoespecial=rectordoctoradoespecial.replaceAll(',','');
+						var secretariodoctoradoespecial = $('#secretariodoctoradoespecial').val();	
+						secretariodoctoradoespecial=secretariodoctoradoespecial.replaceAll(',','');					
+					}
+					trHTML += '<tr><td><strong>Tipo de documento de identidad:</strong> </td><td>'+item.DOCU_TIP + '</td></tr>';
+					trHTML += '<tr><td><strong>Número de documento:</strong></td><td>' + item.DOCU_NUM + '</td></tr>';
+					trHTML += '<tr><td><strong>Apellidos:</strong> </td><td>' + item.APEPAT + ' ' + item.APEMAT + '</td></tr>';
+					trHTML += '<tr><td><strong>Nombres:</strong> </td><td> ' + item.NOMBRE + '</td></tr>';
+					trHTML += '<tr><td><strong>Grado/Título:</strong></td><td> ' + item.GRAD_TITU + '</td></tr>';
+					trHTML += '<tr><td><strong>Especialidad/Mención:</strong></td><td> ' + item.ESPECIALIDAD + '</td></tr>';
+					trHTML += '<tr><td><strong>Tipo de Graduación:</strong></td><td> ' + item.ACTO_TIP + '</td></tr>';
+					trHTML += '<tr><td><strong>Fecha de Graduación:</strong></td><td>'+item.ACTO_FEC+'</td></tr>';
+					trHTML += '<tr><td><strong>Número de Resolución:</strong></td><td> ' + item.RESO_NUM + '</td></tr>';
+					trHTML += '<tr><td><strong>Fecha de Resolución:</strong></td><td>'+item.RESO_FEC+'</td></tr>';
+					trHTML += '<tr><td><strong>Número de Diploma:</strong></td><td> ' + item.DIPL_NUM + '</td></tr>';
+					trHTML += '<tr><td><strong>Fecha de Diploma:</strong></td><td>'+item.DIPL_FEC+'</td></tr>';
+					trHTML += '<tr><td><strong>Número de Libro:</strong></td><td> ' + item.REG_LIBRO + '</td></tr>';
+					trHTML += '<tr><td><strong>Número de Folio:</strong></td><td> ' + item.REG_FOLIO + '</td></tr>';
+					trHTML += '<tr><td><strong>Número de Registro:</strong></td><td> ' + item.REG_REGISTRO + '</td></tr>';
+					if(item.BIT_DOC_ESP === '1'){
+						trHTML += '<tr><td><strong>Nombre:</strong></td><td> ' + unidoc + '</td></tr>';
+					}else{
+
+						trHTML += '<tr><td><strong>Nombre de Institución:</strong></td><td> ' + item.U_NOM + '</td></tr>';
+					}
+					trHTML += '<tr><td><strong>Nombre de Facultad:</strong></td><td> ' + item.FAC_NOM + '</td></tr>';
+					trHTML += '<tr><td><strong>Nombre de la Carrera:</strong></td><td> ' + item.ESC_CARR + '</td></tr>';
+					trHTML += '<tr><td><strong>Nombre de la Escuela:</strong></td><td> ' + item.ESC_POST + '</td></tr>';
+					if(item.BIT_DOC_ESP === '1'){
+						trHTML += '<tr><td><strong>' + item.CARGO1 + ':</strong></td><td> ' + rectordoctoradoespecial + ' </td></tr>';
+					}else{
+						trHTML += '<tr><td><strong>' + item.CARGO1 + ':</strong></td><td> ' + item.AUTORIDAD1 + ' </td></tr>';
+						
+					}
+					if(item.BIT_DOC_ESP === '1'){
+						trHTML += '<tr><td><strong>' + item.CARGO2 + ':</strong></td><td> ' + secretariodoctoradoespecial + '</td></tr>';
+					}else{
+						trHTML += '<tr><td><strong>' + item.CARGO2 + ':</strong></td><td> ' + item.AUTORIDAD2 + '</td></tr>';
+						
+					}
+					
+					trHTML += '<tr><td><strong>' + item.CARGO3 + ':</strong></td><td> ' + item.AUTORIDAD3 + '</td></tr>';
+					trHTML += '<tr><td><strong>Número de Oficio:</strong></td><td> ' + item.REG_OFICIO + '</td></tr>';					
+				}
+			});
+		
+		$('#detalleBox').append(trHTML);
+		$('#detalle_privada_box').removeClass('hidden');
+		refrescarCaptcha();
+		$('#frmProcess').modal('hide');
+		$("body").addClass("modal-open");
+})
+.fail(function() {	
+	mensaje();
+});
+
+})
+.fail(function() {
+	console.log("error3");
+});
+
+})
+
+	//boton agregar al carrito
+	$(document).on('click','.agregarcarritoBtn',function(){
+		if ($('#finalDataProduct tr').hasClass('nada')){
+			$('#finalDataProduct').html('');
+		}
+		$('#infosolicitud').css('display', 'block');
+		$('#table-productos tfoot').removeClass('hidden');
+		$('#myTab li#myTab2, #myTab li#myTab3').removeClass('active');
+		$('#ticket, #tramites').removeClass('in active');
+		$('#myTab li#myTab1').addClass('active');
+		$('#nuevasolicitud').addClass('in active');
+		var dni_solicitador = $(this).data('dni');
+		var nombre_solicitador = $(this).data('nom');
+		var apepat_solicitador = $(this).data('apepat');
+		var apemat_solicitador = $(this).data('apemat');
+		
+		var grado_solicitador = $(this).data('grado');
+		var institucion_solicitador = $(this).data('univ');
+		var iddoc = $(this).data('id');
+		var proc = $(this).data('valor_proceso');
+		var tipodocumento = $(this).data('tipodocu');
+		
+		$('.pagar').data("dnipagar",dni_solicitador);
+		if(proc =='N'){
+			$idservicio=1;
+		} else {
+			$idservicio=2;
+		}
+		$.ajax({
+			url: 'persona',
+			type: 'POST',
+			dataType: 'json',
+			data: {tipoDoc: tipodocumento, numDoc:dni_solicitador,nombre:nombre_solicitador,apepat:apepat_solicitador,apemat:apemat_solicitador}
+		})
+		.done(function(data) {
+			var emailusu = (!data.email) ? '' : data.email;
+			var tele_movil = (!data.tele_movil) ? '' : data.tele_movil;
+			$.ajax({
+				url: 'getcostoidservicio',
+				type: 'POST',
+				dataType: 'json',
+				data: {dni:dni_solicitador,nombre:nombre_solicitador,apepat:apepat_solicitador,apemat:apemat_solicitador,proc:proc,tipodocumento:tipodocumento},
+				'success': function (data) {
+					var costo = data.toFixed(2);
+					var f = new Date();
+					var fecha=(f.getDate() + "/" + (f.getMonth() +1) + "/" + f.getFullYear());
+					$('#'+iddoc).attr("disabled", true);
+					$('#dni_solicitud').val(dni_solicitador);
+					$('#nombreuser').val(nombre_solicitador);
+					$('#grado').val(grado_solicitador);
+					$('#institucion').val(institucion_solicitador);
+					$('#id').val(iddoc);
+					$('#id2').val(iddoc);
+					var inde;
+					var inputemail = $('#emailusu').val();
+					var inputtele = $('#telefonousu').val();
+					if(emailusu!=inputemail && inputemail!=inde){
+						if(inputemail.length>0){
+							emailusu = inputemail;
+						}
+					}
+					if(tele_movil!=inputtele && inputtele!=inde){
+						if(inputtele.length>0){
+							tele_movil = inputtele;
+						}
+					} 
+					$('#table-datos').html('');
+					var trdHTML = '';   
+
+
+					trHTML += '<tr><td  style="font-weight:bold;font-size:12px;text-align: left;"> '+tipodocumento+':</td><td style="font-size:12px;text-align: left;" data-dniinput="'+dni_solicitador+'">'+dni_solicitador+'</td><td rowspan="2" style="border-top:1px solid white;border-bottom:1px solid white;"></td><td style="font-size:12px;text-align:left;"><span class="glyphicon glyphicon-shopping-cart"></span></td><td style="font-weight:bold;font-size:12px;text-align:left;" id="cantidadpro" name="cantidadpro" class="subtotalcantidad" ></td></tr>';
+					trHTML += '<tr><td style="font-weight:bold;font-size:12px;text-align: left;">NOMBRE:</td><td style="font-weight:bold;font-size:12px;text-align: left;" id="nombresolicitador">'+nombre_solicitador+', '+apepat_solicitador+' '+apemat_solicitador+'</td><td style="font-size:12px;text-align: left;"><span class="glyphicon glyphicon-credit-card"></span></td><td style="font-weight:bold;font-size:12px;text-align: left; colspan="2" id="cantidad_productos" style="text-align=center;"></td></tr>';
+					trHTML += '<tr><td style="font-weight:bold;font-size:12px;text-align:left;"><span style="color:red">*</span> E-MAIL:</td><td style="font-size:12px;text-align: left;"><input type="text" name="emailusu" id="emailusu" value="'+emailusu+'" required></td></tr>';
+					trHTML += '<tr><td style="font-weight:bold;font-size:12px;text-align:left;"><span style="color:red">*</span> TELÉFONO:</td><td style="font-size:12px;text-align: left;"><input type="text" name="telefonousu" id="telefonousu" value="'+tele_movil+'" required></td></tr>';
+					trHTML += '<input type="hidden" name="id" id="id" value="'+iddoc+'"><input type="hidden" name="dni" id="dni" value="'+dni_solicitador+'">';
+					trHTML +='<tr><td style="font-size:9px;text-transform:initial; background-color:white; border-left:1px solid white;; border-bottom:1px solid white;border-right:1px solid white;"><p><span style="color:red">*</span> Campos obligatorios.</p></td></tr>';
+					$('#table-datos').append(trHTML);
+					var trHTML = '';
+					trHTML += '<tr><td data-column="Cantidad" style="font-size:12px; vertical-align:center"><input type="number" name="item['+iddoc+''+proc+']" id="'+iddoc+'" class="cantidad solonumeros" value="1" maxlength="2"  min="1" max="99" style="width:70%" data-proc="'+proc+'" data-costo="'+costo+'"></td><td data-column="Fecha" style="font-size:12px; vertical-align:center" ><input type="hidden" name="fechacompra" id="fechacompra" value="'+fecha+'" data-fechacompra1="'+fecha+'">'+fecha+'</td>';
+					trHTML += '<td data-column="Institución" style="font-size:12px; vertical-align:center"><input type="hidden" name="institucion_solicitador" name="institucion_solicitador" value="'+institucion_solicitador+'" >'+institucion_solicitador+'</td><td data-column="Grado" style="font-size:12px; vertical-align:center">'+grado_solicitador+'</td><input type="hidden" id="totall" name="totall" value=""><td data-column="Costo" style="font-size:12px; vertical-align:center" id="monto-'+iddoc+'" class="subtotal" style="font-weight:bold">S/. '+costo+'</td>';
+					trHTML += '<td data-column="Retirar" style="font-size:12px; vertical-align:center"><span class="btn eliminaritem btn-xs btn-primary" data-id="'+iddoc+'"><span class="glyphicon glyphicon-trash"></span></span></td></tr>';
+					trHTML += '<input type="hidden" id="totall" name="totall" value=""><input type="hidden" name="proceso['+iddoc+']" id="proceso['+iddoc+']" value="'+proc+'"><input type="hidden" name="datauser" id="datauser" value="'+nombre_solicitador+', '+apepat_solicitador+' '+apemat_solicitador+'"><input type="hidden" name="tipodocuuse" id="tipodocuuse" value="'+tipodocumento+'">';
+					$('#finalDataProduct').append(trHTML);
+						$('#monto-'+iddoc).data('monto',costo); //data-monto oculto
+						$('#cantidad_productos').html('<b>S/.</b> '+sumarSubtotales());	
+						$('#proc').val(proc); 
+						sumarCantidades();									 	
+					}
+				});
+refrescarCaptcha();
+$('#frmProcess').modal('hide');
+})
+.fail(function() {
+	console.log("error");
+	mensaje();
+    		
+    	})
+.always(function() {
+	console.log("complete");
+});		    
+});
+
+$(document).on('change, keyup', '.cantidad', function(event) {
+	event.preventDefault();
+
+	var id = $(this).attr('id');
+	var cantidad1=$(this).val();
+	var costo =$(this).data('costo');
+	var total= cantidad1*costo;
+	var total_dec= total.toFixed(2);
+	$('#monto-'+id).html("S/. "+total_dec);
+	$('#cantidad_enviar').val(total_dec);
+	var total_sub= cantidad1*costo;
+	$('#subtotal').val(total_sub);
+	var subtotal12 = $(this).attr('subtotal');
+
+	$('#monto-'+id).data('monto',total_sub);
+	$('#cantidad_productos').html('<b>S/.</b> '+sumarSubtotales());
+
+	var proc =$(this).data('proc');
+	sumarCantidades();
+});
+
+$(document).on('blur', '.cantidad', function(event) {
+	event.preventDefault();
+	var id = $(this).attr('id');
+	var cantidad1=$(this).val();
+	var costo =$(this).data('costo');
+	var total= cantidad1*costo;
+	var total_dec= total.toFixed(2);
+	$('#monto-'+id).html("<b>S/.</b> "+total_dec);
+	$('#cantidad_enviar').val(total_dec);
+	var total_sub= cantidad1*costo;
+	$('#subtotal').val(total_sub);
+	var subtotal12 = $(this).attr('subtotal');
+
+	$('#monto-'+id).data('monto',total_sub);
+	$('#cantidad_productos').html('<b>S/.</b> '+sumarSubtotales());
+
+	var proc =$(this).data('proc');
+	sumarCantidades();
+	if($(this).val()=='' || $(this).val()=='0'){
+		$(this).val(1);
+		$(this).trigger('keyup');
+	}else if($(this).val()>=100){
+		$(this).val(99);
+		$(this).trigger('keyup');
+	}else if($(this).val()<=0){
+		$(this).val(1);
+		$(this).trigger('keyup');
+	}else{
+		var valor = $(this).val();
+		$(this).val(parseInt(valor));
+		$(this).trigger('keyup');
+	}
+});
+
+$(document).on("click",".eliminaritem",function(){
+	var ideliminar = $(this).data('id');
+	$(document).find('#'+ideliminar).attr('disabled',false);
+	$(this).closest('tr').remove();
+	sumarCantidades();
+	$('#cantidad_productos').html('<b>S/.</b> '+sumarSubtotales());
+});
+		//BOTON PAGAR
+		$(document).on("click",".pagar",function(e){
+			if ($("#enviardata").valid() && $('#terminos').is(':checked')) {
+				var dni_input       = $(this).data('dnipagar');
+				var monto12         = $(this).attr('cantidad_enviar');
+				$('#totall').val(sumarSubtotales());
+				var totaltotal      = $(this).attr('#totall');
+				var subtotalesinput = sumarSubtotales();
+				subtotalesinput     = subtotalesinput.replace(".","");
+				var proc2           = $(this).data('proc');
+				var num_importe     =sumarSubtotales();
+				var cod_estado      ='0';					
+				$('#subtotal').val(sumarSubtotales());
+				$('#subtotalesinput').val(subtotalesinput);			
+				$('#nroDocReferencial').val(dni_input);
+				$('#subtotalesinput').val(subtotalesinput);
+				$('#num_importe').val(sumarSubtotales());
+				$('#cod_estado').val(cod_estado);
+				$('#subtotal_in').val(subtotalesinput);
+				$('#proc').val(proc2);
+				//event.preventDefault();
+				var options = { 
+			        target:        '#output1',   // target element(s) to be updated with server response 
+			        beforeSubmit:  showRequest,  // pre-submit callback 
+			        success:       showResponse,  // post-submit callback 		 
+			        // other available options: 
+			        url:       'agregar',         // override for form's 'action' attribute 
+			        type:      'post',        // 'get' or 'post', override for form's 'method' attribute 
+			        dataType:  'json'        // 'xml', 'script', or 'json' (expected server response type) 
+			    };
+			    $('#enviardata').ajaxForm(options);
+			} else {
+				e.preventDefault();
+				$(this).attr("disabled", true);
+			}
+		});		
+
+function showRequest(formData, jqForm, options) { 
+	var queryString = $.param(formData); 		 
+		   // console.log('A punto de enviar: \n\n' + queryString); 
+		   return true; 
+		} 
+
+		function showResponse(responseText, statusText, xhr, $form)  {
+			var fuera_Servicio = responseText.mensaje;
+			var texto_error_bn = responseText.texto;
+			
+			var numorden = responseText.numorden;
+			var idUnico = responseText.cod_unico;
+			var idorden = responseText.idunico;
+			var idEntidad = responseText.identidad;
+			if(idUnico>0){
+				$.redirect('https://pasarelapago.bn.com.pe/MultipagoEE', {'ticketMLP': idUnico, 'codEntidad': idEntidad});		
+			}
+			else if(fuera_Servicio == 1){
+				$('#cierrebanco').modal('show');
+				$('#mensajeerror').html(texto_error_bn);
+			}
+			else{
+				$('#myModalsinidunico').modal('show');
+				$(document).ready(function() {
+					$.ajax({
+						url: 'anular',
+						type: 'POST',
+						dataType: 'json',
+						data: {numorden: numorden,monto:'',unibn:'',fechacadu:''},			
+					})
+					.done(function() {
+						
+						$('#estado'+idorden).html('<span style="color:#a1b1bc">Ticket Anulado</span>');							
+						refrescarCaptcha();
+						$('#frmProcess').modal('hide');
+					})
+					.fail(function() {
+					
+						mensaje();
+    		
+    	})
+					.always(function() {
+						console.log("completed ");
+					});
+				})		
+			}
+		} 
+	});
+
+$(document).ready(function(){
+	$('#terminos').change(function() {
+		// Comprobamos emailo y telefono
+		if (comprobarDatos())
+		{
+			$('.pagar').attr("disabled", false);
+		} else {
+			$('.pagar').attr("disabled", true);
+			$(this).attr('checked', false);
+		}
+		if (!$(this).is(':checked')) {
+			$('.pagar').attr("disabled", true);
+		}    
+	});
+});
+
+$(document).on('click','#leido',function(){
+	/*$('#leido').click(function() {*/    	
+		$.ajax({
+			url: 'condicion',
+			type: 'POST',
+			dataType: 'html',
+			data: {idxsistema: 1}
+		})
+		.done(function(data) {
+    		$('#titulotermino').html(data);
+    	})
+		.fail(function() {
+			console.log("error");
+			mensaje();
+    		
+    	})
+		.always(function() {
+			console.log("complete");
+			refrescarCaptcha();
+			$('#frmProcess').modal('hide');
+		});
+});
+function mensaje(){
+	$.ajax({
+		url: 'mensajeerror',
+		type: 'GET',
+		dataType: 'json',		
+	})
+	.done(function(data) {
+		//console.log("success");
+		$('#frmError').modal('toggle');
+		$('#frmError_Body').html('<p>'+data+'</p>');
+	});	
+}
+function sumarCantidades(){
+	var cantidades = $('input.cantidad');
+	var total = 0;
+	if(cantidades.length > 0){
+		cantidades.each(function(i,o){
+			var a = ($(o).val() === '') ? 0 : $(o).val();
+			//console.log(a);
+			total += parseInt(a);
+		});
+	}
+	$('#cantidadpro').html(total+' Constancia(s)');	
+}
+function sumarSubtotales(){
+	var subtotales = $('td.subtotal');
+	var proce = $(this).data('valor_proceso'); 
+	var total = 0;
+	if(subtotales.length > 0){
+		subtotales.each(function(i,o){
+			total += parseFloat($(o).data('monto'));
+			$('.btn.pagar').show();
+			$('#table-productos').show();
+		});
+	}else{
+		$('.btn.pagar').hide();
+		$('#table-productos').hide();
+	}
+	return total.toFixed(2);
+}
+$("body").on('keydown','.solonumeros',function(event) {
+	if(event.shiftKey)
+	{
+		event.preventDefault();
+	}
+
+	if (event.keyCode == 46 || event.keyCode == 8)    {
+	}
+	else {
+		if (event.keyCode < 95) {
+			if (event.keyCode < 48 || event.keyCode > 57) {
+				event.preventDefault();
+			}
+		} 
+		else {
+			if (event.keyCode < 96 || event.keyCode > 105) {
+				event.preventDefault();
+			}
+		}
+	}
+});
+
+$("#enviardata").validate({
+	rules: {
+		telefonousu: {
+			required:true,
+			number: true,
+			minlength: 6,
+			maxlength: 15
+		},
+		emailusu: {
+			required: true,
+			email: true
+		},
+		cantidad:{
+			required: true,
+			number:true,
+			minlength:1,
+			maxlength:2
+		}
+	}
+});
+
+
+$(function(){    
+	$('#myModal').on('show.bs.modal', function (e) {
+		var botonClick = e.relatedTarget;
+		var ruta = $(botonClick).data('href');
+		$('#myModal').find('iframe').attr('src',ruta);	
+	})
+})
+
+$( "#imprimirConstancia" ).on('click',function(event) {
+	event.preventDefault();
+	document.getElementById('verConstancia').contentWindow.print();
+});
+$(function () {
+	  $('[data-toggle="tooltip"]').tooltip()
+	})
+
+/* BOTON VER CONSTANCIA RECONOCIMIENTO DESDE SIU*/
+
+selSolicitudPDFSiu = function(ID){	
+
+	var idSolicitudci = $("#idsolicitudci").val();
+	var txtcicorreo = $("#txtcicorreo").val();
+	$.ajax({
+		url: '/verConstExtSiu',
+		type: 'POST',
+		dataType: 'json',
+		data: {idSolicitudci: idSolicitudci ,ID:ID,txtcicorreo:txtcicorreo},
+		
+		beforeSend: function(){
+			$('#frmProcessEmisionCI').modal({
+		      backdrop: 'static',
+		      keyboard: false
+		    });  
+		}
+	})
+	.done(function(data) {
+
+		$("#"+ID).remove();
+		$('#emitido'+ID).css('display','block');
+		$('#emitido' + ID).attr('href', data.code);
+		window.open("/ci/"+data.name,'_self');		
+		$('#frmProcessEmisionCI').modal('hide');
+		$('#frm_bodySucess_emisionCI').html('La Constancia de Inscripción ha sido emitida correctamente y se ha enviado a su correo electrónico. Revise el correo electrónico: ' + '<span style="color: #3c763d">' + $("#txtcicorreo").val() + '</span>');
+		$('#frm_Success_EmisionCI').modal('show'); 
+		setTimeout(
+		  function() 
+		  {			
+			$.ajax({
+				url: '/eliminartemp/'+data.name,
+				type: 'GET',
+			})
+		  }, 2000);	
+	})
+	.fail(function() {
+		console.log("error");
+	})
+	.always(function(data){
+		console.log("complete1");
+	});
+};
+$('#btnCerrarfrmSuccessCIe').on('click', function() {
+	$('#frm_Success_EmisionCI').modal('hide');
+});
+
+$('#imprimir').on('click',function(){
+	$('#imgpublic').css('display','block');
+	$('#textpublic').css('display','block');
+	
+     
+		var printVerificar = window.open('','PRINT',  'height=600,width=auto');
+
+        printVerificar.document.write('<html><head>');
+       	printVerificar.document.write('<style>.table{width:100%;border-collapse:collapse;margin:16px 0 16px 0;}');
+       	printVerificar.document.write('.table th{border:1px solid #0c0c0c !important;padding:4px;background-color:#5d4595;text-align:left;font-size:15px; color: white !important; }');    
+      	printVerificar.document.write('.table td{border:1px solid #0c0c0c !important;text-align:left;padding:6px;}</style>');
+        printVerificar.document.write(document.getElementById('dataPublica').innerHTML);
+
+        printVerificar.document.write('</body></html>');
+        printVerificar.document.close(); // necesario para IE >= 10   
+        printVerificar.focus(); // necesario para IE >= 10
+        printVerificar.print();
+        printVerificar.close();
+        $('#imgpublic').css('display','none');
+	$('#textpublic').css('display','none');
+        return true;
+    });
+
+/* catpcha */
+$("body").on('click', '#VerirefrescarCaptcha', function (e) {
+		e.preventDefault();
+		verefrescarCaptcha();   	
+	});
+$("body").on('click', '#captchaRefreshPriv', function (e) {
+		e.preventDefault();
+		refrescarCaptchapriv();   	
+	});
+
+function verefrescarCaptcha(){
+    $.ajax({
+    	url: '/imageCaptcha',
+    	type: 'GET',
+    	beforeSend: function(){
+			$('#frmProcessEmisionCI').modal('hide');  
+		}
+    })
+    .done(function() {
+		captcha = $("#captchaImg ,#captchaImgPriv");
+		var img = $('<img>');
+		var d = new Date();
+		var n = d.getMilliseconds();
+		var urlBase = window.location.protocol + "//"+window.document.domain;
+		//var pathname = window.location.origin;//window.location.pathname;
+		// img.attr('src', urlBase+'/imageCaptcha');
+		img.attr('src', '/imageCaptcha');
+		captcha.empty();
+	    captcha.append(img);
+	    $('#captcha').val('').focus();
+    })
+    .fail(function() {
+    	//console.log("error");
+    })
+    .always(function() {
+    	//console.log("complete");
+    });
+} 
+
+setInterval("verefrescarCaptcha()",6*60*1000);
+
+
+function refrescarCaptchapriv(){
+    $.ajax({
+    	url: '/imageCaptcha',
+    	type: 'GET',
+    	beforeSend: function(){
+			$('#frmProcessEmisionCI').modal('hide');  
+		}
+    })
+    .done(function() {
+		captcha = $("#captchaImgPriv");
+		var img = $('<img>');
+		var d = new Date();
+		var n = d.getMilliseconds();
+		var urlBase = window.location.protocol + "//"+window.document.domain;
+		//var pathname = window.location.origin;//window.location.pathname;
+		// img.attr('src', urlBase+'/imageCaptcha');
+		img.attr('src', '/imageCaptcha');
+		captcha.empty();
+	    captcha.append(img);
+	    $('#captcharpri').val('').focus();
+    })
+    .fail(function() {
+    	//console.log("error");
+    })
+    .always(function() {
+    	//console.log("complete");
+    });
+
+}
+setInterval("refrescarCaptchapriv()",6*60*1000);

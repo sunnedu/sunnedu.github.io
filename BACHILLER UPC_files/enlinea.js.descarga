@@ -1,0 +1,1274 @@
+/* mensaje de correccion de datos*/
+
+$(document).ready(function() {
+
+    var URL_BASE  = location.protocol +'//' + window.location.host; 
+
+    $("#close-modal-cu").click(function() {
+        $('#frmErrorCU').modal('hide');
+    });
+
+    $("#limpiar_cu").click(function() {
+        $('#consultaFormCu tbody .child').remove();
+        $("#table_cu").css('display','none');
+    });
+
+    $.ajax({
+            type: "POST",
+            url: URL_BASE+'/anios',
+            async: true,
+            success: function(datos){
+                $("#tipo_proc_cu").html(datos);
+          }
+    });
+
+    $("#buscar_cu").click(function() {
+        var dataArray = $("#consultaFormCu").serializeArray(),
+        
+        data  = new FormData();
+        $(dataArray).each(function(i, field){
+            data.append(field.name, field.value);
+        });
+        
+        var texDocumento = $( "#tipo_doc option:selected" ).text();
+        
+        var URL_BASE  = location.protocol +'//' + window.location.host; 
+        
+       $.ajax({
+            url: URL_BASE + '/carneUniversitario',
+            type: 'POST',           
+            data: data, 
+            cache: false,
+            processData: false,
+            contentType: false,
+            beforeSend  : function(){
+                $('#frmProcessCU').modal({
+                    backdrop: 'static',
+                    keyboard: false
+                });
+            }
+        })
+        .done(function(data) {
+            $('#frmProcessCU').modal('hide');
+            if(data.length > 0){
+                $("#table_cu").css('display','block');
+                    
+                $('#consultaFormCu tbody .child').remove();
+
+                if(Array.isArray(data) == true){
+                    for (var i = 0; i < data.length; i++) {
+                        $('#consultaFormCu tbody').append(
+                            "<tr class='child'>"+
+                                "<td style = 'text-align: left'>"+data[i].nombres + "<br>"+
+                                   texDocumento + " : "+data[i].desNumeroDocumento + "<br>"+
+                                   "CÓDIGO DEL ESTUDIANTE: " + data[i].codigoEstudiante + "<br>"+
+                                "</td>"+
+                                "<td style = 'text-align: left'>"+
+                                    "INSTITUCIÓN:    "   +  data[i].desEntidad+"<br>"+
+                                    "FACULTAD:       "   +  data[i].desEntidadUnidad+"<br>"+
+                                    "CARRERA:        "   +  data[i].desPrograma+"<br>"+
+                                "</td>"+
+                                "<td style = 'text-align: left'>"+
+                                    "AÑO DE INGRESO: "   +  data[i].periodoIngresoAnio+"<br>"+
+                                    "PERIODO DE INGRESO: "   +  data[i].periodoIngresoNumero+"<br>"+
+                                "</td>"+
+                                "<td style = 'text-align: center'>"+data[i].desTipoCarne+"</td>"+
+                                "<td style = 'text-align: center'>"+data[i].anioProceso+"</td>"+
+                                "<td style = 'text-align: center'>"+data[i].desSolicitudCarneEstado+"</td>"+
+                            "</tr>");
+                    }
+                }else{
+                    $('#consultaFormCu tbody').append(
+                        "<tr class='child'>"+
+                            "<td style = 'text-align: left'>"+data.nombres + "<br>"+
+                               texDocumento + " : "+data.desNumeroDocumento + "<br>"+
+                               "CÓDIGO DEL ESTUDIANTE: " + data.codigoEstudiante + "<br>"+
+                            "</td>"+
+                            "<td style = 'text-align: left'>"+
+                                "INSTITUCIÓN:    "   +  data.desEntidad+"<br>"+
+                                "FACULTAD:       "   +  data.desEntidadUnidad+"<br>"+
+                                "CARRERA:        "   +  data.desPrograma+"<br>"+
+                            "</td>"+
+                            "<td style = 'text-align: left'>"+
+                                "AÑO DE INGRESO: "   +  data.periodoIngresoAnio+"<br>"+
+                                "PERIODO DE INGRESO: "   +  data.periodoIngresoNumero+"<br>"+
+                            "</td>"+
+                            "<td style = 'text-align: center'>"+data.desTipoCarne+"</td>"+
+                            "<td style = 'text-align: center'>"+data.anioProceso+"</td>"+
+                            "<td style = 'text-align: center'>"+data.desSolicitudCarneEstado+"</td>"+
+                        "</tr>");
+                }
+
+            }else if(data.Result == 500){
+                $("#table_cu").css('display','none');
+                $('#frmErrorCU').modal('show');
+                $('#frmErrorCU_Body').html("No solicitado.");
+            }else if(data.response == 'error'){
+                $("#table_cu").css('display','none');
+                $('#frmErrorCU').modal('show');
+                $('#frmErrorCU_Body').html(data.message);
+            }else{
+                $("#table_cu").css('display','none');
+                $('#frmErrorCU').modal('show');
+                $('#frmErrorCU_Body').html("No encontrado.");
+            }            
+            // refrescarC();
+            
+        })
+        .fail(function() {
+            $('#frmErrorCU').modal('show');
+            $('#frmErrorCU_Body').html("Error en la consulta");
+        })
+        .always(function() {
+            console.log("complete");
+        });         
+    });
+
+    function getTipoDocumento(tipoDoc){
+        var nomDoc = ''; 
+        if(tipoDoc == '1'){
+            nomDoc = 'DNI';
+        }else if(tipoDoc == '7'){
+            nomDoc = 'PASAPORTE';
+        }else if(tipoDoc == '4'){
+            nomDoc = 'CARNÉ DE EXTRANJERÍA';    
+        }else if(tipoDoc == '12'){
+            nomDoc = 'CÉDULA DE IDENTIDAD';  
+        }
+        return nomDoc;
+    }
+    function  establecerEstadoCarneUniversitario(estado){
+        var estado_carne = '';
+        //console.log("estado"+estado);
+        if(estado == 'APROBADO POR SUNEDU'){
+            estado_carne = 'EN PRODUCCIÓN';
+        }else if(estado == 'DESPACHADO A SUNEDU'){
+            estado_carne = 'EN ALMACÉN DE SUNEDU';
+        }else if(estado == 'EN APROBACIÓN SUNEDU'){
+            estado_carne = 'SOLICITADO';
+        }else if(estado == 'EN PRODUCCIÓN'){
+            estado_carne = 'EN PRODUCCIÓN';
+        }else if(estado == 'ENTREGADO A UNIVERSIDAD'){
+            estado_carne = 'ENTREGADO A LA UNIVERSIDAD';
+        }else if(estado == 'PENDIENTE DE PAGO'){
+            estado_carne = 'SOLICITADO';
+        }else if(estado == 'RECHAZADO POR SUNEDU'){
+            estado_carne = 'RECHAZADO POR SUNEDU, COORDINAR CON TU UNIVERSIDAD';
+        }else if(estado == 'RECIBIDO SUNEDU'){
+            estado_carne = 'EN ALMACÉN DE SUNEDU';
+        }else if(estado == 'REGISTRADO POR UNIVERSIDAD'){
+            estado_carne = 'SOLICITADO';
+        }else if(estado == 'ANULADO'){
+            estado_carne = 'NO SOLICITADO';
+        }
+        return estado_carne;
+    }
+
+    $('.cil').click(function() {
+        $('#icono').val('0');
+        cil();
+       
+    });
+    
+    $('.cu').click(function() {
+        $('#icono').val('0');
+        cu();
+    });
+
+    $('.cilcorreccion').click(function() {
+        $('#icono').val('1');
+        cilcorreccion();    
+        $('#modalConstancia').modal('show');
+    });
+
+    $('.contacto').click(function() { 
+        contacto();
+    });
+
+    $('#modalConstancia').on('shown.bs.modal', function() {
+        $('body').removeClass('modal-open');
+        activarBtnApp();
+    });
+    
+    $('#modalCu').on('shown.bs.modal', function() {
+        $('body').removeClass('modal-open');
+    });
+
+    $('.pergyt').click(function() {
+        pergyt();
+    });
+
+    $('.argyt').click(function() {
+        argyt();
+    });
+    // renati no va
+    $('.aip').click(function() {
+        aip();
+    });
+
+    $('.ris').click(function() {
+        ris();
+    });
+    $('.verifirma').click(function() {
+        verifirma();
+    });
+
+    // MPV
+    $('.mpv').click(function() {
+        mpv();
+    });
+
+    // SOLICITUD VIRTUAL
+    $('.solicitudvirtual').click(function() {
+        solicitudvirtual();
+    });
+       // autoridades
+
+    $('.openformvd').click(function() {
+        $('#ifrmShowFormVerificarDocumento').css('display','block');
+        $('#dvGuiasVeriDocmento').css('display','none');
+    });
+
+    $('.openinfovd').click(function() {
+        $('#ifrmShowFormVerificarDocumento').css('display','none');
+        $('#dvGuiasVeriDocmento').css('display','block');
+        activarBtnApp();
+    });
+
+    $('.veriDocmento').click(function() {
+        jQuery('body').css('height', '100vh').css('overflow-y', 'hidden');
+      
+        $('#ifrmShowFormVerificarDocumento').attr('src', url_verificar_documento);
+        $('#tituloModalVeriDocmentoG').html('VERIFICA LA AUTENTICIDAD');
+        $('#tituloModalVeriDocmentoM').html('DE UNA CONSTANCIA EMITIDA POR LA SUNEDU');
+        ga('send', 'event', {
+            eventCategory: 'EnLinea',
+            eventAction: 'click',
+            eventLabel: 'AUTORIDADDES'
+        });
+
+    }); 
+
+    $('.dlinea').click(function() {
+        dlinea();
+    });
+
+    $('.dacervo').click(function() {
+        dacervo();
+    });
+
+     $('.infolegales').click(function() {
+        infolegales();
+    });
+
+    $('.electronica').click(function() {
+        electronica();
+    });
+    for (var i = 0; i < $('.botonHeadModal').size(); i++) {
+        $('.botonHeadModal').removeAttr( "style" );
+    };
+
+    // botones superiores modal
+    $('.botonHeadModal').click(function() {
+        var index = $('.botonHeadModal').index( this );
+        for (var i = 0; i < $('.botonHeadModal').size(); i++) {
+            $('.botonHeadModal').removeAttr("style");
+        };
+
+        $('.botonHeadModal').eq(index)
+            .css('border-top','40px solid #5e4596')
+            .css('border-left','10px solid transparent')
+            .css('border-right','10px solid transparent')
+            .css('color','white')
+            .css('z-index','9999')
+            .css('cursor','pointer');
+    });    
+
+    if (varServicio == 'getVerif') {
+        cil();
+        publica();
+        $('#modalConstancia').modal('show');
+    }else if (varServicio == 'getVerifica') {
+        cil();
+        publica();
+        $('#modalConstancia').modal('show');
+    }else if (varServicio == 'getConstancia') {
+        cil();
+        privada();
+        $('#modalConstancia').modal('show');
+    }else if (varServicio == 'getConstancia') {
+        cil();
+        privada();
+        $('#modalConstancia').modal('show');
+    }
+    else if (varServicio == 'getConstanciaIn') {
+        cil();
+        privada();
+        $('#modalConstancia').modal('show');
+    }else if (varServicio == 'getAip') {
+        aip();
+        $('#modalAccesoInfo').modal('show');
+    }else if (varServicio == 'getRis') {
+        ris();
+        $('#modalContenedor').modal('show');
+    }else if (varServicio == 'getDlinea') {
+        dlinea();
+        $('#modalautoridades').modal('show')
+    }else if (varServicio == 'getContacto') {
+        console.log('contacto');
+        contacto();
+        $('#modalcontactos').modal('show');
+    }else if (varServicio == 'getVerifAutoridad') {
+        verifirma();
+        $('#modalVeriFirma').modal('show');
+    }else if(varServicio == 'estadodemicarne'){
+        cu();
+        carneuniversitario();
+        $('#modalCu').modal('show');
+    }else if (varServicio == 'getelectronica') {
+        electronica();
+        $('#modalelectronica').modal('show')
+    }else if (varServicio == 'getmpv') {
+        mpv();
+        $('#modalmpv').modal('show');
+        activarBtnApp();
+    }else if (varServicio == 'getacervo') {
+        dacervo();
+        $('#modalacervo').modal('show');
+    }else if (varServicio == 'getinfolegal') {
+        infolegales();
+        $('#modalinfolegales').modal('show');
+          $('.openinfolegal').click();
+    }else if (varServicio == 'getmpvoci') {
+        oci();
+        $('#modaloci').modal('show');
+    }else if (varServicio == 'getorientacion') {
+        orientacion();
+        $('#modalPergyt').modal('show');
+    }
+
+    // Todo modal
+    // PESTAÑA guia de modal constancia
+
+    $('.openinfocons').click(function() {       
+      $('#dvGuiaConst').css('display','block');
+       $('#ifrmShowFormConstancias').css('display','none');
+      
+    });
+
+    $('.openformcons').click(function() {      
+     $('#ifrmShowFormConstancias').css('display','block');
+      $('#dvGuiaConst').css('display','none');
+    });
+
+    $('#modalConstancia').on('shown.bs.modal', function() {
+      
+    });
+    // modal orientacion
+    $('.openinfoPer').click(function() {
+        $('#dvGuiasPerGyt').css('display','block');
+        $('#dvContFormOrienta').css('display','none');
+    });
+    $('.openformPer').click(function() {
+        $('#dvContFormOrienta').css('display','block');
+        $('#dvGuiasPerGyt').css('display','none');
+    });
+     $('#modalPergyt').on('shown.bs.modal', function() {
+      
+    });
+
+    $('.openinfo').click(function() {
+      $('#ifrmShowForm').css('display','none');
+      $('#dvGuias').css('display','block');
+    });
+
+    $('.openform').click(function() {
+      $('#ifrmShowForm').css('display','block');
+      $('#dvGuias').css('display','none');
+    });
+
+    // modal acceso a la info
+    $('.openinfoAI').click(function() {
+        $('#ifrmShowFormAI').css('display','none');
+        $('#dvGuiasAI').css('display','block');
+    });
+
+    $('.openformAI').click(function() {
+      $('#ifrmShowFormAI').css('display','block');
+      $('#dvGuiasAI').css('display','none');
+    });
+
+    // modal PerGyt
+    $('.openinfoPer').click(function() {
+        $('#ifrmShowFormPerGyt').css('display','none');
+        $('#dvGuiasPerGyt').css('display','block');
+    });
+    $('.openformPer').click(function() {
+        $('#ifrmShowFormPerGyt').css('display','block');
+        $('#dvGuiasPerGyt').css('display','none');
+      });
+    // veri firma
+    $('.openinfoVeri').click(function() {       
+        //$('#ifrmShowFormVeriFirma').css('display','none');
+        //$('#dvGuiasVeriFirma').css('display','block');
+        openinfoVeri();
+    });
+     function openinfoVeri(){
+        $('#ifrmShowFormVeriFirma').css('display','none');
+        $('#dvGuiasVeriFirma').css('display','block');
+
+    }
+    
+    $('.openformVeri').click(function() {
+        $('#ifrmShowFormVeriFirma').css('display','block');
+        $('#dvGuiasVeriFirma').css('display','none');
+    });
+
+     // Mesa de partes virtual
+    $('.openinfompv').click(function() {       
+        $('#msjMPV').modal('show');
+        $('#ifrmShowFormMPV').css('display','none');
+        $('#dvGuiasMPV').css('display','block');
+    });
+    
+    $('.openformmpv').click(function() {
+        $('#msjMPV').modal('show');
+        $('#ifrmShowFormMPV').css('display','block');
+        $('#dvGuiasMPV').css('display','none');
+    });
+
+    // SOLICITUD VIRTUAL
+    $('.openinfoSolicitud').click(function() {  
+        $('#dvGuiasSolicitud').css('display','block');
+    });
+
+    // modal autoridades
+    // modal acceso a la info
+    // Todo modal
+    $('.openinfoautoridades').click(function() {
+      $('#ifrmShowFormautoridades').css('display','none');
+      $('#dvGuiasautoridades').css('display','block');
+    });
+
+    $('.openformautoridades').click(function() {
+      $('#ifrmShowFormautoridades').css('display','block');
+      $('#dvGuiasautoridades').css('display','none');
+    });
+
+    $('.openinfoacervo').click(function() {
+        
+      $('#ifrmShowFormacervo').css('display','none');
+      $('#dvGuiasacervo').css('display','block');
+      $('.contentGuia').css('display','block');
+    });
+
+    $('.openformacervo').click(function() {
+     
+      $('#ifrmShowFormacervo').css('display','block');
+      $('#dvGuiasacervo').css('display','none');
+      $('.contentGuia').css('display','none');
+    });
+    
+    $('#modalacervo').on('shown.bs.modal', function() {
+      $('.openinfoacervo').click();
+      activarBtnGuia();
+    });
+
+     /* OCI */
+    $('.openinfooci').click(function() {
+      $('#dvGuiasoci').css('display','block');
+      $('.contentGuia').css('display','block');
+    });
+     $('#modaloci').on('shown.bs.modal', function() {
+      $('.openinfooci').click();
+      activarBtnGuia();
+    });
+
+    $('#modalautoridades').on('shown.bs.modal', function() {
+      $('.openinfoautoridades').click();
+      activarBtnGuia();
+    });
+
+       /* casilla electronica*/
+    $('.openinfoelectronica').click(function() {        
+      $('#ifrmShowFormelectronica').css('display','none');
+      $('#dvGuiaselectronica').css('display','block');
+    });
+
+    $('.openformelectronica').click(function() {
+      $('#ifrmShowFormelectronica').css('display','block');
+      $('#dvGuiaselectronica').css('display','none');
+    });
+
+    $('#modalelectronica').on('shown.bs.modal', function() {
+      $('.openinfoelectronica').click();
+      activarBtnGuia();
+    });
+      
+
+   /* casilla electronica*/
+   $('.openinfoelectronica').click(function() {        
+    $('#ifrmShowFormelectronica').css('display','none');
+    $('#dvGuiaselectronica').css('display','block');
+  });
+
+  $('.openformelectronica').click(function() {
+    $('#ifrmShowFormelectronica').css('display','block');
+    $('#dvGuiaselectronica').css('display','none');
+  });
+
+  $('#modalelectronica').on('shown.bs.modal', function() {
+    $('.openinfoelectronica').click();
+  });
+
+    /* Denuncia PAC */
+    $('.openinfoDenunciaPAC').click(function() {        
+       $('#ifrmShowFormDenunciaPAC').css('display','none');
+       $('#dvGuiasDenunciaPAC').css('display','block');
+    });
+
+    $('.openformDenunciaPAC').click(function() {        
+       $('#ifrmShowFormDenunciaPAC').css('display','block');
+       $('#dvGuiasDenunciaPAC').css('display','none');
+    });
+
+    $('#modalDenunciaPAC').on('shown.bs.modal', function() {
+       $('.openinfoDenunciaPAC').click();
+    });
+
+
+    // PESTAÑA guia de modal constancia
+
+    $('.openinfocons').click(function() {       
+      $('#dvGuiaConst').css('display','block');
+      $('#dvContFormConstancia').css('display','none');
+    });
+
+    $('.openformcons').click(function() {       
+      $('#dvContFormConstancia').css('display','block');
+      $('#dvGuiaConst').css('display','none');
+    });
+
+    $('#modalConstancia').on('shown.bs.modal', function() {
+     
+    });
+    /******************/
+    $('.openformcu').click(function() {
+        $('#dvContFormCarne').css('display','block');
+        $('#dvGuiaCarne').css('display','none');
+    });
+
+    $('.openinfocu').click(function() {
+        $('#dvContFormCarne').css('display','none');
+        $('#dvGuiaCarne').css('display','block');
+    });
+
+    // when open modal
+    $('#modalContenedor').on('shown.bs.modal', function() {
+      $('.openform').click();
+      activarBtnApp();
+    });
+
+    
+    $('#modalCu').on('shown.bs.modal', function() {
+        $('.openformcu').click();
+        $("#limpiar_cu").click();
+         $('body').removeClass('modal-open');
+        activarBtnApp();
+    });
+
+    $('#modalAccesoInfo').on('shown.bs.modal', function() {
+        $('.openinfoAI').click();
+    });
+
+    $('#modalPergyt').on('shown.bs.modal', function() {
+        $('.openinfoPer').click();
+        activarBtnGuia();
+    });
+    
+    $('#modalVeriFirma').on('shown.bs.modal', function() {
+       // $('.openinfoVeri').click();
+       activarBtnGuia();
+        openinfoVeri();
+    });
+
+      //CONSULTA PÚBLICA
+    $('.openinfoconspublica').click(function() {
+      $('#dvContFormConstancia').css('display','none');
+      $('#dvGuiaConstpublica').css('display','block');
+
+    });
+
+    $(".modal").on("shown.bs.modal", function () {
+      if ($(".modal-backdrop").length > 1) {
+          $(".modal-backdrop").not(':first').remove();
+      }
+    });
+
+    /* INFO LEGALES*/
+
+    $('.openinfolegal').click(function() {
+        
+      $('#ifrmShowForminfolegal').css('display','none');
+      $('#dvGuiasInfoLegal').css('display','block');
+      $('.contentGuia').css('display','block');
+    });
+
+    $('.openformlegal').click(function() {
+     
+      $('#ifrmShowForminfolegal').css('display','block');
+      $('#dvGuiasInfoLegal').css('display','none');
+      $('.contentGuia').css('display','none');
+    });
+    
+    $('#modalinfolegales').on('shown.bs.modal', function() {
+      $('.openinfolegal').click();
+      activarBtnGuia();
+    });
+
+
+    var remv = function(){
+      $('body').removeClass('animated').removeClass('bounceInUp');
+    };
+    setTimeout(remv, 2000);
+
+
+    $('#imprimir').on('click',function(){
+        $('#imgpublic').css('display','block');
+        $('#textpublic').css('display','block'); 
+     
+        var printVerificar = window.open('','PRINT',  'height=700,width=auto');
+        printVerificar.document.write('<html><head>');
+        printVerificar.document.write('<style>.table{width:100%;border-collapse:collapse;margin:16px 0 16px 0;}');
+        printVerificar.document.write('.table th{border:1px solid #0c0c0c !important;padding:4px;background-color:#5d4595;text-align:left;font-size:15px; color: white !important;}');
+        printVerificar.document.write('.table td{border:1px solid #0c0c0c !important;text-align:left;padding:6px;}</style>');
+        printVerificar.document.write('</head><body>');
+        printVerificar.document.write(document.getElementById('dataPublica').innerHTML);
+        printVerificar.document.write('</body></html>');
+        printVerificar.document.close(); // necesario para IE >= 10
+        printVerificar.focus(); // necesario para IE >= 10
+        printVerificar.print();
+        $('#imgpublic').css('display','none');
+        $('#textpublic').css('display','none');
+        printVerificar.close();
+        return true;
+    });
+
+    $('#imprimirdetalle').on('click',function(){
+          $('#detalle_privada_box').removeClass('hidden');
+        var printConstancia = window.open('', 'PRINT', 'height=500,width=750');
+        printConstancia.document.write('<html><head>');
+        printConstancia.document.write('<style>.table{width:100%;border-collapse:collapse;margin:16px 0 16px 0;}');
+        printConstancia.document.write('.table th{border:1px solid #0c0c0c !important;padding:4px;background-color:#5d4595;text-align:left;font-size:15px; color: white !important;}');
+        printConstancia.document.write('.table td{border:1px solid #0c0c0c !important;text-align:left;padding:6px;}</style>');
+        printConstancia.document.write('</head><body>');
+        printConstancia.document.write('<p><img src="https://enlinea.sunedu.gob.pe/img/banner_oficial.png" width="100%" height="100px"></p>');
+        printConstancia.document.write('<center><div class="col-md-12 text-center"><h4>REGISTRO NACIONAL DE GRADOS ACADÉMICOS Y TÍTULOS PROFESIONALES</h4></div></center>');
+        printConstancia.document.write(document.getElementById('Dataprivada').innerHTML);
+        printConstancia.document.write('</body></html>');
+        printConstancia.document.close(); // necesario para IE >= 10
+        printConstancia.focus(); // necesario para IE >= 10
+        printConstancia.print();
+        printConstancia.close();
+        return true;   
+    });
+
+
+    function downloadReport(){
+        var http = new XMLHttpRequest();
+        http.responseType = 'blob';
+
+        var header;
+        var blob;
+        var url = 'descargarpdf';
+        var params = $('#consultaForm').serialize();
+        http.open("POST", url, true);
+
+        http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+
+        http.onreadystatechange = function() {//Call a function when the state changes.
+            if(http.readyState == 4 && http.status == 200) {
+                var filename = "";
+                var disposition = http.getResponseHeader('Content-Disposition');
+                if (disposition && disposition.indexOf('attachment') !== -1) {
+                    var filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+                    var matches = filenameRegex.exec(disposition);
+                    if (matches != null && matches[1]) filename = matches[1].replace(/['"]/g, '');
+                }
+                var type = http.getResponseHeader('Content-Type');
+                blob = new Blob([http.response], { type: type ,endings:'native'});
+                var URL = window.URL || window.webkitURL;
+                var downloadUrl = URL.createObjectURL(blob);
+                var a = document.createElement("a");
+                a.href = downloadUrl;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+            }
+        }
+        http.send(params);
+    }
+
+
+    function imprimirdetalle(){
+        var http = new XMLHttpRequest();
+        http.responseType = 'blob';
+
+        var header;
+        var blob;
+        var url = 'descargarpdfdetalle';
+        var params = "id="+id+"&opcion="+opcion+"&proc="+proc+"&ca="+ca;
+
+        http.open("POST", url, true);
+
+        http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+
+        http.onreadystatechange = function() {//Call a function when the state changes.
+            if(http.readyState == 4 && http.status == 200) {
+                var filename = "";
+                var disposition = http.getResponseHeader('Content-Disposition');
+                if (disposition && disposition.indexOf('attachment') !== -1) {
+                    var filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+                    var matches = filenameRegex.exec(disposition);
+                    if (matches != null && matches[1]) filename = matches[1].replace(/['"]/g, '');
+                }
+                var type = http.getResponseHeader('Content-Type');
+                blob = new Blob([http.response], { type: type ,endings:'native'});
+                var URL = window.URL || window.webkitURL;
+                var downloadUrl = URL.createObjectURL(blob);
+                var a = document.createElement("a");
+                a.href = downloadUrl;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+            }
+        }
+        http.send(params);
+    }
+});
+
+    // privada
+    $(document).on('click','.publica',function(){
+        publica();
+    });
+
+    $(document).on('click','.privada',function(){
+        privada();
+    });
+
+    function publica(){
+        jQuery('body').css('height', '100vh').css('overflow-y', 'hidden');
+       // var url_constanciapublica = 'https://constanciasdesa.sunedu.gob.pe/verificainscrito'
+        $('#ifrmShowFormConstancias').attr('src', url_constanciapublica);
+        $('#tituloModalConstG').html('REGISTRO NACIONAL DE '); 
+        $('#tituloModalConstM').html('GRADOS ACADÉMICOS Y TÍTULOS PROFESIONALES');
+       /* ga('send', 'event', {
+            eventCategory: 'EnLinea',
+            eventAction: 'click',
+            eventLabel: 'RNGT'
+        });*/
+
+        $('#tituloModalConstG').html('REGISTRO NACIONAL DE '); 
+        $('#tituloModalConstM').html('GRADOS ACADÉMICOS Y TÍTULOS PROFESIONALES');
+
+        $('#tituloModalCarneG').html('ESTADO DE '); 
+        $('#tituloModalCarneM').html('MI CARNÉ UNIVERSITARIO');
+
+
+        $('.nav-tabs a[href="#publica"]').tab('show');  
+
+        $('.divpublica').removeClass("hidden"); 
+        $('.divprivada').addClass("hidden"); 
+    }
+
+    function privada(){
+         jQuery('body').css('height', '100vh').css('overflow-y', 'hidden');
+      //  var url_constanciaprivada = 'https://constanciasdesa.sunedu.gob.pe/constancia'
+        $('#ifrmShowFormConstancias').attr('src', url_constanciaprivada);
+        $('#tituloModalConstG').html('CONSTANCIA DE '); 
+        $('#tituloModalConstM').html('INSCRIPCIÓN EN LÍNEA');
+
+        ga('send', 'event', {
+            eventCategory: 'EnLinea',
+            eventAction: 'click',
+            eventLabel: 'SEVI'
+        });
+
+       // $('#dvContFormConstancia').css('display','none');
+       // $('#dvContFormConstancia').html('<img src="https://enlineadesa.sunedu.gob.pe/images/MANTENIMIENTO.png" width="400px" alt="">');
+
+        $('#tituloModalConstG').html('CONSTANCIA DE '); 
+        $('#tituloModalConstM').html('INSCRIPCIÓN EN LÍNEA');
+
+        $('#tituloModalCarneG').html('CONSTANCIA DE '); 
+        $('#tituloModalCarneM').html('INSCRIPCIÓN EN LÍNEA');
+
+        $('.nav-tabs a[href="#privada"]').tab('show');
+
+        $('.divprivada').removeClass("hidden"); 
+        $('.divpublica').addClass("hidden"); 
+    }
+
+    function contacto(){
+        jQuery('body').css('height', '100vh').css('overflow-y', 'hidden');
+        $('#tituloModalContM').html('ORIENTACIÓN PARA EL CIUDADANO '); 
+        //$('#tituloModalConstM').html('GRADOS ACADÉMICOS Y TÍTULOS PROFESIONALES');
+        $("#contactoForm")[0].reset();
+        ga('send', 'event', {
+            eventCategory: 'EnLinea',
+            eventAction: 'click',
+            eventLabel: 'CONTACTO'
+        });
+    }
+
+    function cil(){
+        $('.tabenlinea').addClass('hidden');
+       // limpiar();
+        
+        $("#buscarPriv").add();
+        $("#btnLimpiarci").add();
+        $('#doc').val('');
+        $('#nombre').val('');
+        $('#docPriv').val('');
+        $('#codigoPriv').val('');
+        $('.sombra ').val('');
+        jQuery('body').css('height', '100vh').css('overflow-y', 'hidden');      
+    }
+
+    function cu(){
+        $('.tabenlinea').addClass('hidden');
+     //   limpiar();
+        $('#doc_cu').val('');
+        $('#nombre').val('');
+        $('#docPriv').val('');
+        $('#codigoPriv').val('');
+        $('.sombra ').val('');
+        jQuery('body').css('height', '100vh').css('overflow-y', 'hidden');      
+    }
+
+    function cilcorreccion(){
+        $('.tabenlinea').addClass('hidden');
+       // limpiar();
+        $('#doc').val('');
+        $('#nombre').val('');
+        $('#docPriv').val('');
+        $('#codigoPriv').val('');
+        $('.sombra ').val('');
+        jQuery('body').css('height', '100vh').css('overflow-y', 'hidden');
+    }
+    
+    function carneuniversitario(){
+
+        ga('send', 'event', {
+            eventCategory: 'EnLinea',
+            eventAction: 'click',
+            eventLabel: 'RNGT'
+        });
+
+        $('#tituloModalCarneG').html('ESTADO DE '); 
+        $('#tituloModalCarneM').html('MI CARNÉ UNIVERSITARIO');
+    }
+
+    
+
+    function pergyt(){
+        jQuery('body').css('height', '100vh').css('overflow-y', 'hidden');
+        $('#ifrmShowFormPerGyt').attr('src', url_preevaluacion);
+        $('#tituloModalPerA').html('ORIENTACIÓN');
+        $('#tituloModalPerM').html('PARA EL RECONOCIMIENTO DE ');
+        $('#tituloModalPerG').html('GRADOS Y TÍTULOS EXTRANJEROS');
+        $('#dvGuiasPerGyt').load(guia_pergyt);
+
+        ga('send', 'event', {
+            eventCategory: 'EnLinea',
+            eventAction: 'click',
+            eventLabel: 'PREEVALUACION'
+        });
+    }
+    
+    function verifirma(){
+        jQuery('body').css('height', '100vh').css('overflow-y', 'hidden');
+        $('#ifrmShowFormVeriFirma').attr('src', url_verifirma);
+        $('#tituloModalVeriFirmaG').html('CONSTANCIA DE VERIFICACION DE');
+        $('#tituloModalVeriFirmaM').html('DATOS DE AUTORIDADES');
+        ga('send', 'event', {
+            eventCategory: 'EnLinea',
+            eventAction: 'click',
+            eventLabel: 'VERIFIRMA'
+        });
+    }
+  
+    function solicitudvirtual(){
+        jQuery('body').css('height', '100vh').css('overflow-y', 'hidden');
+        $('#dvGuiasSolicitud').css('display','block');        
+        $('#tituloSolicitudVirtualG').html('SOLICITUD VIRTUAL DE');
+        $('#tituloSolicitudVirtualM').html('RECONOCIMIENTO DE GRADOS Y/O TÍTULOS');
+
+        ga('send', 'event', {
+            eventCategory: 'EnLinea',
+            eventAction: 'click',
+            eventLabel: 'SOLICITUDVIRTUAL'
+        });
+    }
+
+
+     function mpv(){
+        jQuery('body').css('height', '100vh').css('overflow-y', 'hidden');
+        $('#ifrmShowFormMPV').attr('src', url_mpv);
+        $('#tituloModalMPVG').html('MESA DE PARTES');
+        $('#tituloModalMPVM').html('VIRTUAL (MPV)');
+
+        ga('send', 'event', {
+            eventCategory: 'EnLinea',
+            eventAction: 'click',
+            eventLabel: 'MPV'
+        });
+    }
+
+    function argyt(){        
+        jQuery('body').css('height', '100vh').css('overflow-y', 'hidden');
+        $('#ifrmShowForm').attr('src', ' https://www.sunedu.gob.pe/wp-content/uploads/2017/04/maintance1.png');
+        $('#tituloModalG').html('SOLICITUD DE ACTUALIZACIÓN DE DATOS PARA ');
+        $('#tituloModalM').html('GRADOS Y TÍTULOS EXTRANJEROS');
+        $('#dvGuias').load(guia_argyt);
+
+        ga('send', 'event', {
+            eventCategory: 'EnLinea',
+            eventAction: 'click',
+            eventLabel: 'ACTUALIZACION'
+        });
+    }
+
+    function aip(){
+        jQuery('body').css('height', '100vh').css('overflow-y', 'hidden');
+      
+        $('#ifrmShowFormAI').attr('src', url_vinfo);
+        $('#tituloModalGAI').html('ACCESO ');
+        $('#tituloModalMAI').html('A LA INFORMACIÓN PÚBLICA');
+        $('#dvGuiasAI').load(guia_aip);
+
+        ga('send', 'event', {
+            eventCategory: 'EnLinea',
+            eventAction: 'click',
+            eventLabel: 'VINFO'
+        });
+    }
+
+    function ris(){
+        jQuery('body').css('height', '100vh').css('overflow-y', 'hidden');
+        $('#ifrmShowForm').attr('src', url_reginsa);
+        $('#tituloModalG').html('REGISTRO DE ');
+        $('#tituloModalM').html('INFRACTORES Y SANCIONES');
+        $('#dvGuias').load(guia_ris);
+
+        ga('send', 'event', {
+            eventCategory: 'EnLinea',
+            eventAction: 'click',
+            eventLabel: 'REGINSA'
+        });
+    }
+
+    function dlinea(){
+        jQuery('body').css('height', '100vh').css('overflow-y', 'hidden');
+        $('#ifrmShowFormautoridades').attr('src', url_sudenuncia);
+        $('#tituloModalGAutoridades').html('DENUNCIAS EN ');
+        $('#tituloModalMAutoridades').html('LÍNEA');
+        $('#dvGuiasautoridades').load(guia_dlinea);
+
+        ga('send', 'event', {
+            eventCategory: 'EnLinea',
+            eventAction: 'click',
+            eventLabel: 'DENUNCIAS'
+        });
+    }
+
+    function dacervo(){
+        jQuery('body').css('height', '100vh').css('overflow-y', 'hidden');
+        $('#ifrmShowFormacervo').attr('src', url_acervo);
+        $('#tituloModalGAcervo').html('DENUNCIAS EN LÍNEA');
+        $('#tituloModalMAcervo').html('DOCUMENTACIÓN ACADÉMICA');
+
+        ga('send', 'event', {
+            eventCategory: 'EnLinea',
+            eventAction: 'click',
+            eventLabel: 'ACERVO'
+        });   
+    }
+       /* ORIENTACION PARA EL RECONOCIMIENTO DE GRADOS Y TITULOS EXTRANJEROS */
+    function orientacion(){
+        jQuery('body').css('height', '100vh').css('overflow-y', 'hidden');
+        ga('send', 'event', {
+            eventCategory: 'EnLinea',
+            eventAction: 'click',
+            eventLabel: 'ORIENTACION'
+        });  
+    }
+    /* OCI */
+    function oci(){
+        jQuery('body').css('height', '100vh').css('overflow-y', 'hidden');
+        ga('send', 'event', {
+            eventCategory: 'EnLinea',
+            eventAction: 'click',
+            eventLabel: 'OCI'
+        });  
+    }
+
+     /* INFORMES LEGALES */
+    function infolegales(){
+        jQuery('body').css('height', '100vh').css('overflow-y', 'hidden');
+        $('#ifrmShowForminfolegal').attr('src', url_infolegal);
+        $('#tituloModalGLegal').html('INFORMES LEGALES');
+        $('#tituloModalMLegal').html('INTERPRETACIÓN DE LA LEY UNIVERSITARIA');
+
+        ga('send', 'event', {
+            eventCategory: 'EnLinea',
+            eventAction: 'click',
+            eventLabel: 'ACERVO'
+        });   
+    }
+
+    function electronica(){
+        
+        jQuery('body').css('height', '100vh').css('overflow-y', 'hidden');
+        $('#ifrmShowFormelectronica').attr('src', url_electronica);
+        $('#ifrmShowFormelectronica').css('display','block');
+        $('#tituloModalGelectronica').html('AFÍLIATE');
+        $('#tituloModalMelectronica').html('A LA CASILLA ELECTRÓNICA');
+        $('#dvGuiaselectronica').load(guia_electronica);
+
+        ga('send', 'event', {
+            eventCategory: 'EnLinea',
+            eventAction: 'click',
+            eventLabel: 'ELECTRONICA'
+        });
+    }
+
+
+    function colorBoton(i,color) {
+        $('.botonHeadModal').eq(i)
+            .css('border-top','40px solid ' + color)
+            .css('border-left','10px solid transparent')
+            .css('border-right','10px solid transparent')
+            .css('color','white')
+            .css('z-index','9999')
+            .css('cursor','pointer');
+    }
+
+    
+       $(document).ready(function()
+       {           
+           var pathname = window.location.pathname;              
+           var fechaactual = new Date();
+           var fechados = new Date('2018-09-04');         
+           if(fechaactual <= fechados && pathname == '/'){            
+               $('#mensaje').on('shown.bs.modal', function() {
+                   $('body').removeClass('modal-open');
+               })                               
+                 $("#mensaje").modal("show");  
+           }else{              
+               $("#mensaje").modal("hide");
+           }       
+       }); 
+
+        
+$(".closemodaldetalle").click(function(){
+            $("#myModaldetalle").modal("hide");
+
+        });
+        $("#closemodalresolucion").click(function(){            
+            $("#myModalresolucion").modal("hide");
+
+        });
+        $(".closeModalConstancia").click(function(){
+            $("#modalConstancia").modal("hide");
+            $("#closemodaldiplomaftp").modal("hide");
+            $("#modalConstancia").modal("hide");
+            // var base_url = window.location.origin;
+            // window.location.href = base_url;
+        });
+        $(".closeModalConstanciaVirtReco").click(function(){
+            
+            $("#myModal").modal("hide");
+            $("#closemodaldiplomaftp").modal("hide");
+            $("#myModaldetalle").modal("hide");
+            // var base_url = window.location.origin;
+            // location.href = base_url;
+        });
+
+        
+        $("#closemodaldiploma").click(function(){           
+            $("#myModal").modal("hide");
+        });
+
+        $("#closemodaldiplomaext").click(function(){        
+            $("#myModalextranjero").modal("hide");
+        });
+        $("#closemodaldiplomaextSiu").click(function(){     
+            $("#myModalextranjeroSiu").modal("hide");
+        });
+        $("#closediploresoSiu").click(function(){       
+            $("#myModalSiu").modal("hide");
+        });
+        
+
+        $("#closemodaldiplomaftp").click(function(){
+
+            $("#myModaldiplomaftp").modal("hide");
+
+        });
+
+
+        $("#btncerrarimprimir").click(function(){
+            $("#myModal2").modal("hide");
+
+        });
+        $("#closemodalci").click(function(){
+            $("#myModalConstanciag").modal("hide");
+            
+            $("#mencuesta").modal("show");
+            encuesta();
+        });
+
+        $("#btncerrarimprimirCons").click(function(){
+            $("#myModalConstanciag").modal("hide");
+            
+            $("#mencuesta").modal("show");
+            encuesta();
+        });
+
+        $("#cerrarConstancia").click(function(){
+            $("#myModal2").modal("hide");
+
+        });
+        $("#cerrarConstanciaCons").click(function(){
+            $("#myModalConstanciag").modal("hide");
+            
+            $("#mencuesta").modal("show");
+            encuesta();            
+        });
+
+        $("#btncerraranular").click(function(){
+            $("#myModalAnular").modal("hide");
+
+        });
+
+        $("#btncerraranularorden").click(function(){
+            $("#myModalAnular").modal("hide");
+
+        });
+
+        $("#btncerrarDatospersona").click(function(){
+            $("#myModalDatospersona").modal("hide");
+
+        });
+
+        $("#btncerrarmodalpersona").click(function(){
+            $("#myModalDatospersona").modal("hide");
+
+        });
+
+        $("#btncerrarterminos").click(function(){
+            $("#myModalterminoscompra").modal("hide");
+
+        });
+
+        $("#btncerrarterminoscompra").click(function(){
+            $("#myModalterminoscompra").modal("hide");
+
+        });
+
+        $("#btncerraridunicomodal").click(function(){
+            $("#myModalsinidunico").modal("hide");
+
+        });
+
+        $("#btncerraridunico").click(function(){
+            $("#myModalsinidunico").modal("hide");
+
+        });
+
+        $(".btnClose").click(function(){
+            jQuery('body').css('height', '').css('overflow-y', '');
+            $('#frmError').modal('hide');
+        });
+
+        $(".btnCloseModal").click(function(){
+            jQuery('body').css('height', '').css('overflow-y', '');
+            $('#frmError').modal('hide');
+        });
+        
+
+        // Cerrar los modal popups
+        $("#closeModalSucces").click(function(){
+            $("#frmSuccess").modal("hide");
+        });
+        $("#closeModalSuccesCorreccion").click(function(){
+            $("#frmSuccessCorreccion").modal("hide");
+        });
+
+        $("#closeModalError").click(function(){
+            $("#frmError").modal("hide");
+        });
+
+        $("#closeModalErrorDatos").click(function(){
+            $("#frmMensajesCorrecciones").modal("hide");
+        });
+        
+        $("#cerrarDatos").click(function(){
+            $("#editardatos").modal("hide");
+        });
+
+        $("#cerrarCorrec").click(function(){
+            $("#datos_solicitante").tab('show');    
+        });
+        
+        $("#cerrarDatosSolicitante").click(function(){
+            $("#myModalpestanas").modal("hide");
+        });
+        $("#cerrarmensajeDatosSolicitante").click(function(){
+            $("#mensajedatossolicitantes").modal("hide");
+        });
+        
+        $("#cerrarTabsDatosSolicitante").click(function(){
+            $("#myModalpestanas").modal("hide");
+        });
+
+        $("#cerrarDatosSolicitanteclose").click(function(){
+            $("#datossolicitantes").modal("hide");
+        });
+        
+        $("#cerrarDatosclose").click(function(){
+            $("#editardatos").modal("hide");
+        });
+        $("#closemyModalDiplomaSiu,#cerrarModalDiplomaSius").click(function(){
+            $("#myModalDiplomaSiu").modal("hide");
+        });        
+
+        $("#cerrarPreviaDatos").click(function(){
+            $("#vistapreviadatos").modal("hide");
+        });
+	
+
+     $('#btnAplicativoOrie').click(function(){
+          $('.openformPer').click();
+        });
+
+
+// Rediseño
+$('.btnAppCons').click(function(){
+    $(this).addClass("btnActivo");
+    $('.btnGuiaCons').removeClass("btnActivo");
+});
+
+$('.btnGuiaCons').click(function(){
+    $(this).addClass("btnActivo");
+    $('.btnAppCons').removeClass("btnActivo");
+});
+function activarBtnApp(){
+    $('.btnAppCons').addClass("btnActivo");
+    $('.btnGuiaCons').removeClass("btnActivo");
+}
+function activarBtnGuia(){
+    $('.btnGuiaCons').addClass("btnActivo");
+    $('.btnAppCons').removeClass("btnActivo");
+}
